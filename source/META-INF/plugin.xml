@@ -1,0 +1,31 @@
+<idea-plugin version="2">
+  <name>Plugin name here</name>
+  <description>short description of the plugin</description>
+  <version>1.0</version>
+  <vendor>YourCompany</vendor>
+  <idea-version since-build="8000"/>
+
+  <application-components>
+    <!-- Add your application components here -->
+  </application-components>
+
+  <project-components>
+    <component>
+        <implementation-class>velir.intellij.cq5.components.JcrViewComponent</implementation-class>
+    </component>
+  </project-components>
+
+  <actions>
+      <group id="velir.intellij.cq5.actions.felix.Menu" text="Felix" description="Felix Actions">
+          <add-to-group group-id="MainMenu" anchor="after" relative-to-action="VcsGroups" />
+          <action id="velir.intellij.cq5.actions.felix.OpenServerConfiguration"
+                  class="velir.intellij.cq5.actions.felix.OpenServerConfiguration"
+                  text="Open Server Configuration"
+                  description="Open the Felix server configuration." />
+      </group>
+  </actions>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Add your extensions here -->
+  </extensions>
+</idea-plugin>
