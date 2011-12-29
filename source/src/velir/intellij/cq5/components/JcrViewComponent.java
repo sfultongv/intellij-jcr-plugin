@@ -8,15 +8,13 @@ import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
-import com.intellij.ui.treeStructure.Tree;
-import org.apache.jackrabbit.commons.JcrUtils;
-import org.apache.jackrabbit.jcr2dav.Jcr2davRepositoryFactory;
-import velir.intellij.cq5.listeners.JcrTreeExpansionListener;
+import velir.intellij.cq5.jcr.Connection;
+import velir.intellij.cq5.jcr.LightNode;
+import velir.intellij.cq5.ui.JcrTree;
 
-import javax.jcr.*;
-import javax.swing.tree.DefaultMutableTreeNode;
-import java.util.HashMap;
-import java.util.Map;
+import javax.jcr.Node;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 
 /**
  * A component that will present the jcr repository to the user.
@@ -56,49 +54,34 @@ public class JcrViewComponent extends AbstractProjectComponent {
 	}
 
 	private JBScrollPane createPanel() {
-		//create our repository factory and our session objects.
-		Jcr2davRepositoryFactory factory = new Jcr2davRepositoryFactory();
-		Repository rep = null;
+		//declare our session object.
 		Session session = null;
 
-		try {
-			//get our repository from our factory.
-			Map<String, String> parameters = new HashMap<String, String>();
-			parameters.put(JcrUtils.REPOSITORY_URI, "http://localhost:4502/crx/server");
-			rep = factory.getRepository(parameters);
+		//declare our root node.
+		LightNode rootNode = null;
 
-			//login to our repository
-			session = rep.login(new SimpleCredentials("admin", "admin".toCharArray()), "crx.default");
+		//try to get our root node from crx.
+		try {
+			//get our session
+			session = Connection.getSession();
 
 			//pull out our root node.
-			Node rootNode = session.getRootNode();
-			DefaultMutableTreeNode root = new DefaultMutableTreeNode("/");
+			Node jcrRootNode = session.getRootNode();
 
-			//go through each of our root children and create a tree node
-			NodeIterator ni = rootNode.getNodes();
-			while (ni.hasNext()) {
-				Node childNode = ni.nextNode();
-				DefaultMutableTreeNode child = new DefaultMutableTreeNode(childNode.getName());
-				root.add(child);
-			}
-
-			//create our JTree
-			Tree tree = new Tree(root);
-
-			//show root handle
-			tree.setShowsRootHandles(true);
-
-			tree.addTreeExpansionListener(new JcrTreeExpansionListener());
-
-			//create and return our panel.
-			return new JBScrollPane(tree);
-		} catch (Exception ex) {
+			//create our light node from our jcr node
+			rootNode = new LightNode(jcrRootNode);
+		} catch (RepositoryException rex) {
 		} finally {
-			session.logout();
-			session = null;
-			rep = null;
+			//if we were able to retrieve a session then logout
+			if (session != null) {
+				session.logout();
+			}
 		}
 
-		return null;
+		//create our jcr tree from our root node
+		JcrTree tree = new JcrTree(rootNode);
+
+		//create and return our panel.
+		return new JBScrollPane(tree);
 	}
 }
