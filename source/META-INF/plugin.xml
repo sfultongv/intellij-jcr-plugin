@@ -1,5 +1,5 @@
 <idea-plugin version="2">
-  <name>Plugin name here</name>
+  <name>CQ5 Content Editor</name>
   <description>short description of the plugin</description>
   <version>1.0</version>
   <vendor>YourCompany</vendor>
@@ -23,9 +23,13 @@
                   text="Open Server Configuration"
                   description="Open the Felix server configuration." />
       </group>
+	  <action id="velir.intellij.cq5.actions.content.NewComponent" class="velir.intellij.cq5.actions.content.NewComponent" text="New _Component"
+	          description="create a cq5 component">
+		  <add-to-group group-id="NewGroup" anchor="last"/>
+	  </action>
   </actions>
 
   <extensions defaultExtensionNs="com.intellij">
-    <!-- Add your extensions here -->
+	  <!-- Add your extensions here -->
   </extensions>
 </idea-plugin>
