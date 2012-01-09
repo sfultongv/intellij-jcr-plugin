@@ -106,7 +106,10 @@ public class VNode {
 	}
 
 	public JPanel makePanel (boolean nameEditingEnabled) {
-		JPanel nodePanel = new JPanel(new GridLayout(properties.size() + 2, 1));
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.VERTICAL;
+		int ypos = 0;
+		JPanel nodePanel = new JPanel(new GridBagLayout());
 
 		// node name
 		JPanel namePanel = new JPanel(new GridLayout(1,2));
@@ -128,13 +131,15 @@ public class VNode {
 		});
 		nameField.setEditable(nameEditingEnabled);
 		namePanel.add(nameField);
-		nodePanel.add(namePanel);
+		nodePanel.add(namePanel, c);
 
 		// separator
-		nodePanel.add(new JSeparator(JSeparator.HORIZONTAL));
+		c.gridy = 1;
+		nodePanel.add(new JSeparator(JSeparator.HORIZONTAL), c);
 
 		// properties
-		JPanel propertiesPanel = new JPanel(new GridLayout(properties.size(), 1));
+		c.gridy = 0;
+		JPanel propertiesPanel = new JPanel(new GridBagLayout());
 		for (Map.Entry<String,Object> property : properties.entrySet()) {
 			JPanel jPanel = new JPanel(new GridLayout(1,2));
 
@@ -171,9 +176,11 @@ public class VNode {
 				jPanel.add(jTextField);
 			}
 
-			propertiesPanel.add(jPanel);
+			c.gridy++;
+			propertiesPanel.add(jPanel, c);
 		}
-		nodePanel.add(propertiesPanel);
+		c.gridy = 2;
+		nodePanel.add(propertiesPanel, c);
 
 		return nodePanel;
 	}
