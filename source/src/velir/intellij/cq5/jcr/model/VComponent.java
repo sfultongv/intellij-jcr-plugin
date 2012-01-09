@@ -1,79 +1,53 @@
 package velir.intellij.cq5.jcr.model;
 
-import org.jdom.Element;
-import org.jdom.Namespace;
+public class VComponent extends VNode {
+	public static final String CQ_COMPONENT = "cq:Component";
+	public static final String CQ_ISCONTAINER = "cq:isContainer";
+	public static final String JCR_TITLE = "jcr:title";
+	public static final String ALLOWED_PARENTS = "allowedParents";
+	public static final String COMPONENT_GROUP = "componentGroup";
 
-public class VComponent implements VBase {
-	private String name;
-	private String allowedParents;
-	private String componentGroup;
-	private String title;
-	private boolean container;
-
-	private static final Namespace CQ_NS = Namespace.getNamespace("cq", "http://www.day.com/jcr/cq/1.0");
-	private static final Namespace JCR_NS = Namespace.getNamespace("jcr", "http://www.jcp.org/jcr/1.0");
-
-	public VComponent () {
-		name = "";
-		allowedParents = "";
-		componentGroup = "";
-		title = "";
-		container = false;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
+	public VComponent (String name) {
+		super(name, CQ_COMPONENT);
+		setProperty(CQ_ISCONTAINER, false);
+		setProperty(JCR_TITLE, "");
+		setProperty(ALLOWED_PARENTS, "");
+		setProperty(COMPONENT_GROUP, "General");
 	}
 
 	public String getAllowedParents() {
-		return allowedParents;
+		return getPropertyString(ALLOWED_PARENTS);
 	}
 
 	public void setAllowedParents(String allowedParents) {
-		this.allowedParents = allowedParents;
+		setProperty(ALLOWED_PARENTS,allowedParents);
 	}
 
 	public String getComponentGroup() {
-		return componentGroup;
+		return getPropertyString(COMPONENT_GROUP);
 	}
 
 	public void setComponentGroup(String componentGroup) {
-		this.componentGroup = componentGroup;
+		setProperty(COMPONENT_GROUP,componentGroup);
 	}
 
 	public String getTitle() {
-		return title;
+		return getPropertyString(JCR_TITLE);
 	}
 
 	public void setTitle(String title) {
-		this.title = title;
+		setProperty(JCR_TITLE, title);
 	}
 
 	public boolean isContainer() {
-		return container;
+		return getPropertyBoolean(CQ_ISCONTAINER);
 	}
 
 	public void setContainer(boolean container) {
-		this.container = container;
+		setProperty(CQ_ISCONTAINER, container);
 	}
 
 	public String getPrimaryType() {
-		return "cq:Component";
+		return getPropertyString(CQ_COMPONENT);
 	}
-
-	public Element getElement() {
-		Element element = new Element(getName());
-		element.addNamespaceDeclaration(CQ_NS);
-		element.addNamespaceDeclaration(JCR_NS);
-		element.setAttribute("title", getTitle(), JCR_NS);
-		element.setAttribute("primaryType", getPrimaryType(), JCR_NS);
-		element.setAttribute("isContainer", "{Boolean}" + isContainer(), CQ_NS);
-		element.setAttribute("allowedParents", getAllowedParents());
-		return element;
-	}
-
 }

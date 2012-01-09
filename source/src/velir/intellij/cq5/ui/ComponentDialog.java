@@ -1,5 +1,6 @@
 package velir.intellij.cq5.ui;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import velir.intellij.cq5.jcr.model.VComponent;
@@ -13,7 +14,7 @@ public class ComponentDialog extends DialogWrapper {
 	public ComponentDialog(Project project) {
 		super(project, false);
 
-		vComponent = new VComponent();
+		vComponent = new VComponent("newComponent");
 
 		init();
 		setTitle("New Component");
@@ -21,7 +22,7 @@ public class ComponentDialog extends DialogWrapper {
 
 	@Override
 	protected JComponent createCenterPanel() {
-		return new VComponentComponent(vComponent).getComponent();
+		return vComponent.makePanel();
 	}
 
 	public VComponent getVComponent() {
