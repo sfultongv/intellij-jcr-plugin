@@ -67,7 +67,7 @@ public class EditNode extends AnAction {
 			});
 
 			// create dialog from node
-			NodeDialog nodeDialog = new NodeDialog(project, vNode, true);
+			NodeDialog nodeDialog = new NodeDialog(project, vNode, false);
 			nodeDialog.show();
 
 			// if OK, update node xml

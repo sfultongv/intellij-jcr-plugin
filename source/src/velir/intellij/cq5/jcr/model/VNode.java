@@ -105,7 +105,7 @@ public class VNode {
 		return element;
 	}
 
-	public JPanel makePanel () {
+	public JPanel makePanel (boolean nameEditingEnabled) {
 		JPanel nodePanel = new JPanel(new GridLayout(properties.size() + 2, 1));
 
 		// node name
@@ -126,6 +126,7 @@ public class VNode {
 				name = nameField.getText();
 			}
 		});
+		nameField.setEditable(nameEditingEnabled);
 		namePanel.add(nameField);
 		nodePanel.add(namePanel);
 

@@ -9,11 +9,13 @@ import javax.swing.*;
 public class NodeDialog extends DialogWrapper {
 
 	private VNode vNode;
+	private boolean isNew;
 
 	public NodeDialog(Project project, VNode vNode, boolean isNew) {
 		super(project, false);
 
 		this.vNode = vNode;
+		this.isNew = isNew;
 		String title = isNew ? "New Node" : "Edit Node";
 
 		init();
@@ -22,7 +24,7 @@ public class NodeDialog extends DialogWrapper {
 
 	@Override
 	protected JComponent createCenterPanel() {
-		return vNode.makePanel();
+		return vNode.makePanel(isNew);
 	}
 
 	public VNode getVNode() {
