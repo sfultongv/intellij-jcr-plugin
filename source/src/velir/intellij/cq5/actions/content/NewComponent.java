@@ -12,10 +12,10 @@ import com.intellij.openapi.util.JDOMUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiFile;
-import com.intellij.util.xml.*;
 import org.jdom.Document;
 import velir.intellij.cq5.jcr.model.VComponent;
-import velir.intellij.cq5.ui.ComponentDialog;
+import velir.intellij.cq5.jcr.model.VNode;
+import velir.intellij.cq5.ui.NodeDialog;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,23 +29,22 @@ public class NewComponent extends AnAction {
 		IdeView ideView = LangDataKeys.IDE_VIEW.getData(dataContext);
 		Module module = LangDataKeys.MODULE.getData(dataContext);
 		Application application = ApplicationManager.getApplication();
-		DomManager manager = DomManager.getDomManager(project);
 
 		PsiDirectory[] dirs = ideView.getDirectories();
 
-		ComponentDialog componentDialog = new ComponentDialog(project);
-		componentDialog.show();
-		if (componentDialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
-			final VComponent vComponent = componentDialog.getVComponent();
+		NodeDialog nodeDialog = new NodeDialog(project, new VComponent("newComponent"), true);
+		nodeDialog.show();
+		if (nodeDialog.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
+			final VNode vNode = nodeDialog.getVNode();
 			for (final PsiDirectory dir : dirs) {
 				application.runWriteAction(new Runnable() {
 					public void run() {
-						PsiDirectory contentDirectory = dir.createSubdirectory(vComponent.getName());
+						PsiDirectory contentDirectory = dir.createSubdirectory(vNode.getName());
 						PsiFile contentFile = contentDirectory.createFile(".content.xml");
 						VirtualFile virtualFile = contentFile.getVirtualFile();
 						try {
-							OutputStream outputStream = virtualFile.getOutputStream(vComponent);
-							Document document = new Document(vComponent.getElement());
+							OutputStream outputStream = virtualFile.getOutputStream(vNode);
+							Document document = new Document(vNode.getElement());
 							JDOMUtil.writeDocument(document, outputStream, "\n");
 							outputStream.close();
 						} catch (IOException ioe) {
@@ -56,8 +55,5 @@ public class NewComponent extends AnAction {
 				});
 			}
 		}
-
-		//Messages.showMessageDialog(project, "Version 2", "Information", Messages.getInformationIcon());
-
 	}
 }

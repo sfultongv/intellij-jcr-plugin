@@ -27,6 +27,10 @@
 	          description="create a cq5 component">
 		  <add-to-group group-id="NewGroup" anchor="last"/>
 	  </action>
+	  <action id="velir.intellij.cq5.actions.content.EditNode" class="velir.intellij.cq5.actions.content.EditNode" text="Edit Component"
+              description="edit a jcr node">
+		  <add-to-group group-id="ProjectViewPopupMenu" anchor="last" />
+      </action>
   </actions>
 
   <extensions defaultExtensionNs="com.intellij">

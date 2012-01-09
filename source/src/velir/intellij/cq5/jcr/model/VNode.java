@@ -1,11 +1,9 @@
 package velir.intellij.cq5.jcr.model;
 
-import org.jdom.Element;
-import org.jdom.Namespace;
+import com.intellij.openapi.util.JDOMUtil;
+import org.jdom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.awt.HorizBagLayout;
-import sun.awt.VerticalBagLayout;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -13,12 +11,17 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class VNode {
+	private static final String BOOLEAN_PREFIX = "{Boolean}";
+
 	private String name;
 	private Map<String, Object> properties;
-	Logger log = LoggerFactory.getLogger(VNode.class);
+	private static final Logger log = LoggerFactory.getLogger(VNode.class);
 
 	public static Map<String,Namespace> namespaces;
 	static {
@@ -84,7 +87,7 @@ public class VNode {
 			Object value = property.getValue();
 			String propertyStringValue = "";
 			if (value instanceof Boolean) {
-				propertyStringValue = "{Boolean}" + value.toString();
+				propertyStringValue = BOOLEAN_PREFIX + value.toString();
 			} else {
 				propertyStringValue = value.toString();
 			}
@@ -172,6 +175,40 @@ public class VNode {
 		nodePanel.add(propertiesPanel);
 
 		return nodePanel;
+	}
+
+
+	public static VNode makeVNode (InputStream inputStream, String name) {
+		VNode vNode = null;
+		try {
+			Document document = JDOMUtil.loadDocument(inputStream);
+			final Element element = document.getRootElement();
+
+			vNode = new VNode(name, "_dummy_");
+
+			for (Object o : element.getAttributes()) {
+				Attribute attribute = (Attribute) o;
+
+				String propertyName = attribute.getQualifiedName();
+				String value = attribute.getValue();
+
+				// choose which type of object to insert
+				if (value.startsWith(BOOLEAN_PREFIX)) {
+					Boolean b = Boolean.parseBoolean(value.replaceFirst(Pattern.quote(BOOLEAN_PREFIX), ""));
+					vNode.setProperty(propertyName, b);
+				} else {
+					vNode.setProperty(propertyName, value);
+				}
+			}
+
+		} catch (JDOMException jde) {
+			log.error("Could not load VNode from inputstream", jde);
+
+		} catch (IOException ioe) {
+			log.error("Could not load VNode from inputstream", ioe);
+		}
+
+		return vNode;
 	}
 
 }
