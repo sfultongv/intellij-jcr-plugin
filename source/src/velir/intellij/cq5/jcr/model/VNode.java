@@ -1,9 +1,11 @@
 package velir.intellij.cq5.jcr.model;
 
+import com.intellij.openapi.ui.VerticalFlowLayout;
 import com.intellij.openapi.util.JDOMUtil;
 import org.jdom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import velir.intellij.cq5.swing.RegexTextField;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -17,7 +19,24 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class VNode {
+
 	private static final String BOOLEAN_PREFIX = "{Boolean}";
+	private static final String DATE_PREFIX = "{Date}";
+	private static final String DOUBLE_PREFIX = "{Double}";
+	private static final String LONG_PREFIX = "{Long}";
+	private static final String NAME_PREFIX = "{Name}";
+	private static final String PATH_PREFIX = "{Path}";
+	private static final String BINARY_PREFIX = "{Binary}";
+	private static final String[] TYPESTRINGS = {
+			"{String}",
+			BOOLEAN_PREFIX,
+			//DATE_PREFIX,
+			DOUBLE_PREFIX,
+			//NAME_PREFIX,
+			//PATH_PREFIX,
+			//BINARY_PREFIX,
+			LONG_PREFIX
+	};
 
 	private String name;
 	private Map<String, Object> properties;
@@ -48,12 +67,36 @@ public class VNode {
 		return (Boolean) properties.get(name);
 	}
 
+	protected Long getPropertyLong (String name) {
+		return (Long) properties.get(name);
+	}
+
+	protected <T> T getProperty (String name, Class<T> type) {
+		return (T) properties.get(name);
+	}
+
+	protected void removeProperty (String name) {
+		properties.remove(name);
+	}
+
 	public String getName () {
 		return name;
 	}
 
 	protected void setName (String name) {
 		this.name = name;
+	}
+
+	private String getStringValue (Object o) {
+		if (o instanceof Long) {
+			return LONG_PREFIX + o.toString();
+		} else if (o instanceof Boolean) {
+			return BOOLEAN_PREFIX + o.toString();
+		} else if (o instanceof Double) {
+			return DOUBLE_PREFIX + o.toString();
+		} else {
+			return o.toString();
+		}
 	}
 
 	public Element getElement() {
@@ -85,12 +128,7 @@ public class VNode {
 
 			// prepend string value with property type
 			Object value = property.getValue();
-			String propertyStringValue = "";
-			if (value instanceof Boolean) {
-				propertyStringValue = BOOLEAN_PREFIX + value.toString();
-			} else {
-				propertyStringValue = value.toString();
-			}
+			String propertyStringValue = getStringValue(value);
 
 			// set property
 			if (propertyNamespace != null) {
@@ -105,11 +143,91 @@ public class VNode {
 		return element;
 	}
 
+	private void addPropertyPanel (final JPanel parentPanel, final String name, final Object value) {
+		final JPanel jPanel = new JPanel(new GridLayout(1,3));
+
+		// make sure the property is set in the node
+		setProperty(name, value);
+
+		// make label
+		JLabel jLabel = new JLabel(name);
+		jPanel.add(jLabel);
+
+		// make input based on property class
+		if (value instanceof Boolean) {
+			final JCheckBox jCheckBox = new JCheckBox("", (Boolean) value);
+			jCheckBox.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					setProperty(name, jCheckBox.isSelected());
+				}
+			});
+			jPanel.add(jCheckBox);
+		} else if (value instanceof Double) {
+			final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*\\.?[0-9]*"), value.toString());
+			regexTextField.getDocument().addDocumentListener(new DocumentListener() {
+				public void insertUpdate(DocumentEvent e) {
+					setProperty(name, Double.parseDouble(regexTextField.getText()));
+				}
+
+				public void removeUpdate(DocumentEvent e) {
+					setProperty(name, Double.parseDouble(regexTextField.getText()));
+				}
+
+				public void changedUpdate(DocumentEvent e) {
+					setProperty(name, Double.parseDouble(regexTextField.getText()));
+				}
+			});
+			jPanel.add(regexTextField);
+		} else if (value instanceof Long) {
+			final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*"), value.toString());
+			regexTextField.getDocument().addDocumentListener(new DocumentListener() {
+				public void insertUpdate(DocumentEvent e) {
+					setProperty(name, Long.parseLong(regexTextField.getText()));
+				}
+
+				public void removeUpdate(DocumentEvent e) {
+					setProperty(name, Long.parseLong(regexTextField.getText()));
+				}
+
+				public void changedUpdate(DocumentEvent e) {
+					setProperty(name, Long.parseLong(regexTextField.getText()));
+				}
+			});
+			jPanel.add(regexTextField);
+		} else {
+			final JTextField jTextField = new JTextField(value.toString());
+			jTextField.getDocument().addDocumentListener(new DocumentListener() {
+				public void insertUpdate(DocumentEvent e) {
+					setProperty(name, jTextField.getText());
+				}
+
+				public void removeUpdate(DocumentEvent e) {
+					setProperty(name, jTextField.getText());
+				}
+
+				public void changedUpdate(DocumentEvent e) {
+					setProperty(name, jTextField.getText());
+				}
+			});
+			jPanel.add(jTextField);
+		}
+
+		// make remove button
+		JButton jButton = new JButton("remove");
+		jButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				parentPanel.remove(jPanel);
+				parentPanel.revalidate();
+				removeProperty(name);
+			}
+		});
+		jPanel.add(jButton);
+
+		parentPanel.add(jPanel);
+	}
+
 	public JPanel makePanel (boolean nameEditingEnabled) {
-		GridBagConstraints c = new GridBagConstraints();
-		c.fill = GridBagConstraints.VERTICAL;
-		int ypos = 0;
-		JPanel nodePanel = new JPanel(new GridBagLayout());
+		JPanel nodePanel = new JPanel(new VerticalFlowLayout());
 
 		// node name
 		JPanel namePanel = new JPanel(new GridLayout(1,2));
@@ -131,56 +249,45 @@ public class VNode {
 		});
 		nameField.setEditable(nameEditingEnabled);
 		namePanel.add(nameField);
-		nodePanel.add(namePanel, c);
+		nodePanel.add(namePanel);
 
 		// separator
-		c.gridy = 1;
-		nodePanel.add(new JSeparator(JSeparator.HORIZONTAL), c);
+		nodePanel.add(new JSeparator(JSeparator.HORIZONTAL));
 
 		// properties
-		c.gridy = 0;
-		JPanel propertiesPanel = new JPanel(new GridBagLayout());
+		final JPanel propertiesPanel = new JPanel(new VerticalFlowLayout());
 		for (Map.Entry<String,Object> property : properties.entrySet()) {
-			JPanel jPanel = new JPanel(new GridLayout(1,2));
-
-			// make label
-			final String name = property.getKey();
-			JLabel jLabel = new JLabel(name);
-			jPanel.add(jLabel);
-
-			// make input based on property class
-			Object value = property.getValue();
-			if (value instanceof Boolean) {
-				final JCheckBox jCheckBox = new JCheckBox("", (Boolean) value);
-				jCheckBox.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent e) {
-						setProperty(name, jCheckBox.isSelected());
-					}
-				});
-				jPanel.add(jCheckBox);
-			} else {
-				final JTextField jTextField = new JTextField(value.toString());
-				jTextField.getDocument().addDocumentListener(new DocumentListener() {
-					public void insertUpdate(DocumentEvent e) {
-						setProperty(name, jTextField.getText());
-					}
-
-					public void removeUpdate(DocumentEvent e) {
-						setProperty(name, jTextField.getText());
-					}
-
-					public void changedUpdate(DocumentEvent e) {
-						setProperty(name, jTextField.getText());
-					}
-				});
-				jPanel.add(jTextField);
-			}
-
-			c.gridy++;
-			propertiesPanel.add(jPanel, c);
+			addPropertyPanel(propertiesPanel, property.getKey(), property.getValue());
 		}
-		c.gridy = 2;
-		nodePanel.add(propertiesPanel, c);
+		nodePanel.add(propertiesPanel);
+
+		// separator
+		nodePanel.add(new JSeparator(JSeparator.HORIZONTAL));
+
+		// make add property panel
+		JPanel newPropertyPanel = new JPanel(new GridLayout(1,2));
+		final JTextField jTextField = new JTextField();
+		newPropertyPanel.add(jTextField);
+		final JComboBox jComboBox = new JComboBox(TYPESTRINGS);
+		newPropertyPanel.add(jComboBox);
+		JButton jButton = new JButton("add property");
+		jButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String type = (String) jComboBox.getSelectedItem();
+				if (BOOLEAN_PREFIX.equals(type)) {
+					addPropertyPanel(propertiesPanel, jTextField.getText(), false);
+				} else if (LONG_PREFIX.equals(type)) {
+					addPropertyPanel(propertiesPanel, jTextField.getText(), 0L);
+				} else if (DOUBLE_PREFIX.equals(type)) {
+					addPropertyPanel(propertiesPanel, jTextField.getText(), 0.0D);
+				} else {
+					addPropertyPanel(propertiesPanel, jTextField.getText(), "");
+				}
+				propertiesPanel.revalidate();
+			}
+		});
+		newPropertyPanel.add(jButton);
+		nodePanel.add(newPropertyPanel);
 
 		return nodePanel;
 	}
@@ -204,6 +311,12 @@ public class VNode {
 				if (value.startsWith(BOOLEAN_PREFIX)) {
 					Boolean b = Boolean.parseBoolean(value.replaceFirst(Pattern.quote(BOOLEAN_PREFIX), ""));
 					vNode.setProperty(propertyName, b);
+				} else if (value.startsWith(DOUBLE_PREFIX)) {
+					Double d = Double.parseDouble(value.replaceFirst(Pattern.quote(DOUBLE_PREFIX), ""));
+					vNode.setProperty(propertyName, d);
+				} else if (value.startsWith(LONG_PREFIX)) {
+					Long l = Long.parseLong(value.replaceFirst(Pattern.quote(LONG_PREFIX), ""));
+					vNode.setProperty(propertyName, l);
 				} else {
 					vNode.setProperty(propertyName, value);
 				}
