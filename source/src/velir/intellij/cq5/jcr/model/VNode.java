@@ -1,11 +1,13 @@
 package velir.intellij.cq5.jcr.model;
 
 import com.intellij.openapi.ui.VerticalFlowLayout;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.JDOMUtil;
 import org.jdom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import velir.intellij.cq5.swing.RegexTextField;
+import velir.intellij.cq5.ui.RegexTextField;
+import velir.intellij.cq5.util.Anonymous;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -35,7 +37,8 @@ public class VNode {
 			//NAME_PREFIX,
 			//PATH_PREFIX,
 			//BINARY_PREFIX,
-			LONG_PREFIX
+			LONG_PREFIX,
+			LONG_PREFIX + "[]"
 	};
 
 	private String name;
@@ -88,12 +91,37 @@ public class VNode {
 	}
 
 	private String getStringValue (Object o) {
+
 		if (o instanceof Long) {
 			return LONG_PREFIX + o.toString();
 		} else if (o instanceof Boolean) {
 			return BOOLEAN_PREFIX + o.toString();
 		} else if (o instanceof Double) {
 			return DOUBLE_PREFIX + o.toString();
+		} else if (o instanceof Long[]) {
+			String s = LONG_PREFIX + "[";
+			Long[] ls = (Long[]) o;
+			if (ls.length == 0) return s + "]";
+			for (int i = 0; i < ls.length - 1; i++) {
+				s += ls[i].toString() + ",";
+			}
+			return s + ls[ls.length - 1] + "]";
+		} else if (o instanceof Boolean[]) {
+			String s = BOOLEAN_PREFIX + "[";
+			Boolean[] ls = (Boolean[]) o;
+			if (ls.length == 0) return s + "]";
+			for (int i = 0; i < ls.length - 1; i++) {
+				s += ls[i].toString() + ",";
+			}
+			return s + ls[ls.length - 1] + "]";
+		} else if (o instanceof Double[]) {
+			String s = DOUBLE_PREFIX + "[";
+			Double[] ls = (Double[]) o;
+			if (ls.length == 0) return s + "]";
+			for (int i = 0; i < ls.length - 1; i++) {
+				s += ls[i].toString() + ",";
+			}
+			return s + ls[ls.length - 1] + "]";
 		} else {
 			return o.toString();
 		}
@@ -143,7 +171,41 @@ public class VNode {
 		return element;
 	}
 
+	interface Callback<T> {
+		public void process(T t);
+	}
+
 	private void addPropertyPanel (final JPanel parentPanel, final String name, final Object value) {
+		// convenience class for adding document listeners
+		class DocumentListenerAdder {
+			public DocumentListenerAdder (final JTextField jTextField, final Callback<String> callback) {
+				jTextField.getDocument().addDocumentListener(new DocumentListener() {
+					public void insertUpdate(DocumentEvent e) {
+						callback.process(jTextField.getText());
+					}
+
+					public void removeUpdate(DocumentEvent e) {
+						callback.process(jTextField.getText());
+					}
+
+					public void changedUpdate(DocumentEvent e) {
+						callback.process(jTextField.getText());
+					}
+				});
+			}
+		}
+
+		// convenience class for adding single-valued document listeners
+		class DocumentListenerSingleAdder {
+			public DocumentListenerSingleAdder (final String name, final JTextField jTextField, final Anonymous<String, Object> makeObject) {
+				new DocumentListenerAdder(jTextField, new Callback<String>() {
+					public void process(String s) {
+						setProperty(name, makeObject.call(s));
+					}
+				});
+			}
+		}
+
 		final JPanel jPanel = new JPanel(new GridLayout(1,3));
 
 		// make sure the property is set in the node
@@ -164,49 +226,88 @@ public class VNode {
 			jPanel.add(jCheckBox);
 		} else if (value instanceof Double) {
 			final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*\\.?[0-9]*"), value.toString());
-			regexTextField.getDocument().addDocumentListener(new DocumentListener() {
-				public void insertUpdate(DocumentEvent e) {
-					setProperty(name, Double.parseDouble(regexTextField.getText()));
-				}
-
-				public void removeUpdate(DocumentEvent e) {
-					setProperty(name, Double.parseDouble(regexTextField.getText()));
-				}
-
-				public void changedUpdate(DocumentEvent e) {
-					setProperty(name, Double.parseDouble(regexTextField.getText()));
+			new DocumentListenerSingleAdder(name,regexTextField,new Anonymous<String, Object>() {
+				public Object call(String s) {
+					return Double.parseDouble(s);
 				}
 			});
 			jPanel.add(regexTextField);
 		} else if (value instanceof Long) {
 			final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*"), value.toString());
-			regexTextField.getDocument().addDocumentListener(new DocumentListener() {
-				public void insertUpdate(DocumentEvent e) {
-					setProperty(name, Long.parseLong(regexTextField.getText()));
-				}
-
-				public void removeUpdate(DocumentEvent e) {
-					setProperty(name, Long.parseLong(regexTextField.getText()));
-				}
-
-				public void changedUpdate(DocumentEvent e) {
-					setProperty(name, Long.parseLong(regexTextField.getText()));
+			new DocumentListenerSingleAdder(name, regexTextField, new Anonymous<String, Object>() {
+				public Object call(String s) {
+					return Long.parseLong(s);
 				}
 			});
 			jPanel.add(regexTextField);
+		} else if (value instanceof Long[]) {
+			final Set<RegexTextField> inputs = new HashSet<RegexTextField>();
+			final JPanel valuesPanel = new JPanel(new VerticalFlowLayout());
+
+			final Runnable setPropertyValues = new Runnable() {
+				public void run() {
+					Long[] values = new Long[inputs.size()];
+					int i = 0;
+					for (RegexTextField input : inputs) {
+						values[i++] = Long.parseLong(input.getText());
+					}
+					setProperty(name, values);
+				}
+			};
+
+			final Callback<Long> addValuePanel = new Callback<Long>() {
+				public void process(Long aLong) {
+					final JPanel innerPanel = new JPanel(new GridLayout(1,2));
+
+					final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*"), aLong.toString());
+					new DocumentListenerAdder(regexTextField, new Callback<String>() {
+						public void process(String s) {
+							setPropertyValues.run();
+						}
+					});
+					inputs.add(regexTextField);
+					innerPanel.add(regexTextField);
+
+					// remove value button
+					JButton jButton = new JButton("X");
+					jButton.addActionListener(new ActionListener() {
+						public void actionPerformed(ActionEvent e) {
+							inputs.remove(regexTextField);
+							valuesPanel.remove(innerPanel);
+							valuesPanel.revalidate();
+
+							// set property now that value has been removed
+							setPropertyValues.run();
+						}
+					});
+					innerPanel.add(jButton);
+
+					valuesPanel.add(innerPanel);
+				}
+			};
+
+			// add a panel for each value of values array
+			for (Long lo : (Long[]) value ) {
+				addValuePanel.process(lo);
+			}
+
+			// add new value button
+			JButton jButton = new JButton("Add");
+			jButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					addValuePanel.process(0L);
+					setPropertyValues.run();
+					valuesPanel.revalidate();
+				}
+			});
+			valuesPanel.add(jButton);
+
+			jPanel.add(valuesPanel);
 		} else {
 			final JTextField jTextField = new JTextField(value.toString());
-			jTextField.getDocument().addDocumentListener(new DocumentListener() {
-				public void insertUpdate(DocumentEvent e) {
-					setProperty(name, jTextField.getText());
-				}
-
-				public void removeUpdate(DocumentEvent e) {
-					setProperty(name, jTextField.getText());
-				}
-
-				public void changedUpdate(DocumentEvent e) {
-					setProperty(name, jTextField.getText());
+			new DocumentListenerSingleAdder(name, jTextField, new Anonymous<String, Object>() {
+				public Object call(String s) {
+					return s;
 				}
 			});
 			jPanel.add(jTextField);
@@ -280,6 +381,8 @@ public class VNode {
 					addPropertyPanel(propertiesPanel, jTextField.getText(), 0L);
 				} else if (DOUBLE_PREFIX.equals(type)) {
 					addPropertyPanel(propertiesPanel, jTextField.getText(), 0.0D);
+				} else if ((LONG_PREFIX + "[]").equals(type)) {
+					addPropertyPanel(propertiesPanel, jTextField.getText(), new Long[] {0L});
 				} else {
 					addPropertyPanel(propertiesPanel, jTextField.getText(), "");
 				}
@@ -314,6 +417,18 @@ public class VNode {
 				} else if (value.startsWith(DOUBLE_PREFIX)) {
 					Double d = Double.parseDouble(value.replaceFirst(Pattern.quote(DOUBLE_PREFIX), ""));
 					vNode.setProperty(propertyName, d);
+				} else if (value.startsWith(LONG_PREFIX + "[")) {
+					Long[] vals;
+					String valuesString = value.substring(0, value.length() - 1).replaceFirst(Pattern.quote(LONG_PREFIX + "["), "");
+					if ("".equals(valuesString)) vals = new Long[0];
+					else {
+						String[] valueBits = valuesString.split(",");
+						vals = new Long[valueBits.length];
+						for (int i = 0; i < valueBits.length; i++) {
+							vals[i] = Long.parseLong(valueBits[i]);
+						}
+					}
+					vNode.setProperty(propertyName, vals);
 				} else if (value.startsWith(LONG_PREFIX)) {
 					Long l = Long.parseLong(value.replaceFirst(Pattern.quote(LONG_PREFIX), ""));
 					vNode.setProperty(propertyName, l);

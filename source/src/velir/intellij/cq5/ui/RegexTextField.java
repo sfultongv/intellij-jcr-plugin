@@ -1,4 +1,4 @@
-package velir.intellij.cq5.swing;
+package velir.intellij.cq5.ui;
 
 import javax.swing.*;
 import javax.swing.text.AttributeSet;
