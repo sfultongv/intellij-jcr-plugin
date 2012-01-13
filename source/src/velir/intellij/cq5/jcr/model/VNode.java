@@ -6,9 +6,14 @@ import com.intellij.openapi.util.JDOMUtil;
 import org.jdom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import velir.intellij.cq5.jcr.Connection;
 import velir.intellij.cq5.ui.RegexTextField;
 import velir.intellij.cq5.util.Anonymous;
 
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -45,17 +50,40 @@ public class VNode {
 			BOOLEAN_PREFIX + "[]",
 			"{String}[]"
 	};
-
-	private String name;
-	private Map<String, Object> properties;
 	private static final Logger log = LoggerFactory.getLogger(VNode.class);
 
+	private static Map<String,VNodeDefinition>  nodeDefinitions;
 	public static Map<String,Namespace> namespaces;
+
 	static {
 		namespaces = new HashMap<String, Namespace>();
 		namespaces.put("cq", Namespace.getNamespace("cq","http://www.day.com/jcr/cq/1.0"));
 		namespaces.put("jcr", Namespace.getNamespace("jcr","http://www.jcp.org/jcr/1.0"));
+
+		// fill in node definitions
+		nodeDefinitions = new HashMap<String, VNodeDefinition>();
+		Session session = null;
+		try {
+			HashMap<String, VNodeDefinition> newNodeDefinitions = new HashMap<String, VNodeDefinition>();
+			session = Connection.getSession();
+			Node rootNode = session.getNode("/jcr:system/jcr:nodeTypes");
+			NodeIterator nodeIterator = rootNode.getNodes();
+			while (nodeIterator.hasNext()) {
+				Node node = nodeIterator.nextNode();
+				newNodeDefinitions.put(node.getName(), new VNodeDefinition(node.getName()));
+			}
+			nodeDefinitions = newNodeDefinitions;
+
+		} catch (RepositoryException re) {
+			log.warn("Could not get node definitions from the JCR");
+		} finally {
+			if (session != null) session.logout();
+		}
+
 	}
+
+	private String name;
+	private Map<String, Object> properties;
 
 	public VNode (String name, String type) {
 		this.name = name;
@@ -540,6 +568,19 @@ public class VNode {
 				|| value instanceof Boolean[]
 				|| value instanceof String[]) {
 			addMultiValueProperty(jPanel, name, value);
+		} else if (JCR_PRIMARYTYPE.equals(name) && nodeDefinitions != null) { // handle primaryType property as select
+			String[] options = new String[nodeDefinitions.size()];
+			options = nodeDefinitions.keySet().toArray(options);
+			Arrays.sort(options);
+			final JComboBox jComboBox = new JComboBox(options);
+			jComboBox.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					setProperty(name, jComboBox.getSelectedItem());
+				}
+			});
+			jComboBox.setSelectedItem(value);
+			jComboBox.setEditable(canAlter(name));
+			jPanel.add(jComboBox);
 		} else {
 			final JTextField jTextField = new JTextField(value.toString());
 			new DocumentListenerSingleAdder(name, jTextField, new Anonymous<String, Object>() {
