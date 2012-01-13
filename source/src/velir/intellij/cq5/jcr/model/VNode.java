@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 
 public class VNode {
 
+	protected static final String JCR_PRIMARYTYPE = "jcr:primaryType";
 	private static final String BOOLEAN_PREFIX = "{Boolean}";
 	private static final String DATE_PREFIX = "{Date}";
 	private static final String DOUBLE_PREFIX = "{Double}";
@@ -59,7 +60,7 @@ public class VNode {
 	public VNode (String name, String type) {
 		this.name = name;
 		properties = new HashMap<String, Object>();
-		properties.put("jcr:primaryType", type);
+		properties.put(JCR_PRIMARYTYPE, type);
 	}
 
 	protected void setProperty (String name, Object value) {
@@ -84,6 +85,24 @@ public class VNode {
 
 	protected void removeProperty (String name) {
 		properties.remove(name);
+	}
+
+	/**
+	 * can remove property from node?
+	 * @param name
+	 * @return
+	 */
+	protected boolean canRemove (String name) {
+		return (! JCR_PRIMARYTYPE.equals(name));
+	}
+
+	/**
+	 * can alter property?
+	 * @param name
+	 * @return
+	 */
+	protected boolean canAlter (String name) {
+		return true;
 	}
 
 	public String getName () {
@@ -496,6 +515,7 @@ public class VNode {
 					setProperty(name, jCheckBox.isSelected());
 				}
 			});
+			jCheckBox.setEnabled(canAlter(name));
 			jPanel.add(jCheckBox);
 		} else if (value instanceof Double) {
 			final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*\\.?[0-9]*"), value.toString());
@@ -504,6 +524,7 @@ public class VNode {
 					return Double.parseDouble(s);
 				}
 			});
+			regexTextField.setEditable(canAlter(name));
 			jPanel.add(regexTextField);
 		} else if (value instanceof Long) {
 			final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*"), value.toString());
@@ -512,14 +533,12 @@ public class VNode {
 					return Long.parseLong(s);
 				}
 			});
+			regexTextField.setEditable(canAlter(name));
 			jPanel.add(regexTextField);
-		} else if (value instanceof Long[]) {
-			addMultiValueProperty(jPanel, name, value);
-		} else if (value instanceof Double[]) {
-			addMultiValueProperty(jPanel, name, value);
-		} else if (value instanceof Boolean[]) {
-			addMultiValueProperty(jPanel, name, value);
-		} else if (value instanceof String[]) {
+		} else if (value instanceof Long[]
+				|| value instanceof Double[]
+				|| value instanceof Boolean[]
+				|| value instanceof String[]) {
 			addMultiValueProperty(jPanel, name, value);
 		} else {
 			final JTextField jTextField = new JTextField(value.toString());
@@ -528,6 +547,7 @@ public class VNode {
 					return s;
 				}
 			});
+			jTextField.setEditable(canAlter(name));
 			jPanel.add(jTextField);
 		}
 
@@ -540,6 +560,7 @@ public class VNode {
 				removeProperty(name);
 			}
 		});
+		jButton.setEnabled(canRemove(name));
 		jPanel.add(jButton);
 
 		parentPanel.add(jPanel);

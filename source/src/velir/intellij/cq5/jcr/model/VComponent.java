@@ -11,8 +11,20 @@ public class VComponent extends VNode {
 		super(name, CQ_COMPONENT);
 		setProperty(CQ_ISCONTAINER, false);
 		setProperty(JCR_TITLE, "");
-		setProperty(ALLOWED_PARENTS, "");
+		setProperty(ALLOWED_PARENTS, "*/parsys");
 		setProperty(COMPONENT_GROUP, "General");
+	}
+
+	protected boolean canAlter (String name) {
+		return super.canAlter(name) && ! JCR_PRIMARYTYPE.equals(name);
+	}
+
+	protected boolean canRemove (String name) {
+		return super.canRemove(name)
+				&& ! CQ_ISCONTAINER.equals(name)
+				&& ! JCR_TITLE.equals(name)
+				&& ! ALLOWED_PARENTS.equals(name)
+				&& ! COMPONENT_GROUP.equals(name);
 	}
 
 	public String getAllowedParents() {

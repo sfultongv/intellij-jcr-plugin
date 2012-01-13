@@ -23,9 +23,13 @@
                   text="Open Server Configuration"
                   description="Open the Felix server configuration." />
       </group>
-	  <action id="velir.intellij.cq5.actions.content.NewComponent" class="velir.intellij.cq5.actions.content.NewComponent" text="New _Component"
+	  <action id="velir.intellij.cq5.actions.content.NewComponent" class="velir.intellij.cq5.actions.content.NewComponent" text="New Component"
 	          description="create a cq5 component">
 		  <add-to-group group-id="NewGroup" anchor="last"/>
+	  </action>
+	  <action id="velir.intellij.cq5.actions.content.NewNode" class="velir.intellij.cq5.actions.content.NewNode" text="New Node"
+	          description="create a cq5 node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.NewComponent"/>
 	  </action>
 	  <action id="velir.intellij.cq5.actions.content.EditNode" class="velir.intellij.cq5.actions.content.EditNode" text="Edit Component"
               description="edit a jcr node">
