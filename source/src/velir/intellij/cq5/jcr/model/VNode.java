@@ -1,26 +1,19 @@
 package velir.intellij.cq5.jcr.model;
 
 import com.intellij.openapi.ui.VerticalFlowLayout;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.JDOMUtil;
 import org.jdom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import velir.intellij.cq5.jcr.Connection;
 import velir.intellij.cq5.ui.RegexTextField;
 import velir.intellij.cq5.util.Anonymous;
 
-import javax.jcr.Node;
-import javax.jcr.NodeIterator;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -52,7 +45,6 @@ public class VNode {
 	};
 	private static final Logger log = LoggerFactory.getLogger(VNode.class);
 
-	private static Map<String,VNodeDefinition>  nodeDefinitions;
 	public static Map<String,Namespace> namespaces;
 
 	static {
@@ -60,30 +52,13 @@ public class VNode {
 		namespaces.put("cq", Namespace.getNamespace("cq","http://www.day.com/jcr/cq/1.0"));
 		namespaces.put("jcr", Namespace.getNamespace("jcr","http://www.jcp.org/jcr/1.0"));
 
-		// fill in node definitions
-		nodeDefinitions = new HashMap<String, VNodeDefinition>();
-		Session session = null;
-		try {
-			HashMap<String, VNodeDefinition> newNodeDefinitions = new HashMap<String, VNodeDefinition>();
-			session = Connection.getSession();
-			Node rootNode = session.getNode("/jcr:system/jcr:nodeTypes");
-			NodeIterator nodeIterator = rootNode.getNodes();
-			while (nodeIterator.hasNext()) {
-				Node node = nodeIterator.nextNode();
-				newNodeDefinitions.put(node.getName(), new VNodeDefinition(node.getName()));
-			}
-			nodeDefinitions = newNodeDefinitions;
-
-		} catch (RepositoryException re) {
-			log.warn("Could not get node definitions from the JCR");
-		} finally {
-			if (session != null) session.logout();
-		}
-
+		// set up node definitions
+		VNodeDefinition.buildDefinitions();
 	}
 
 	private String name;
 	private Map<String, Object> properties;
+	private JPanel primaryTypePanel; // store this so we can treat it special
 
 	public VNode (String name, String type) {
 		this.name = name;
@@ -568,14 +543,15 @@ public class VNode {
 				|| value instanceof Boolean[]
 				|| value instanceof String[]) {
 			addMultiValueProperty(jPanel, name, value);
-		} else if (JCR_PRIMARYTYPE.equals(name) && nodeDefinitions != null) { // handle primaryType property as select
-			String[] options = new String[nodeDefinitions.size()];
-			options = nodeDefinitions.keySet().toArray(options);
-			Arrays.sort(options);
-			final JComboBox jComboBox = new JComboBox(options);
+		} else if (JCR_PRIMARYTYPE.equals(name) && VNodeDefinition.hasDefinitions()) { // handle primaryType property as select
+			final JComboBox jComboBox = new JComboBox(VNodeDefinition.getNodeTypeNames());
+			primaryTypePanel = jPanel;
 			jComboBox.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					setProperty(name, jComboBox.getSelectedItem());
+					String newPrimaryType = (String) jComboBox.getSelectedItem();
+					setProperty(name, newPrimaryType);
+					// refresh properties
+					switchPrimaryType(parentPanel, VNodeDefinition.getDefinition(newPrimaryType).getPropertiesMap());
 				}
 			});
 			jComboBox.setSelectedItem(value);
@@ -605,6 +581,20 @@ public class VNode {
 		jPanel.add(jButton);
 
 		parentPanel.add(jPanel);
+	}
+
+	private void switchPrimaryType (JPanel propertiesPanel, Map<String,Object> newMap) {
+		for (Component component : propertiesPanel.getComponents()) {
+			if (! component.equals(primaryTypePanel)) propertiesPanel.remove(component);
+		}
+		properties = newMap;
+		for (Map.Entry<String,Object> property : properties.entrySet()) {
+			// don't add another primaryType selector
+			if (! JCR_PRIMARYTYPE.equals(property.getKey())) {
+				addPropertyPanel(propertiesPanel, property.getKey(), property.getValue());
+			}
+		}
+		propertiesPanel.revalidate();
 	}
 
 	public JPanel makePanel (boolean nameEditingEnabled) {

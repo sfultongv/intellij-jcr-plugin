@@ -10,6 +10,7 @@ import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import velir.intellij.cq5.jcr.Connection;
 import velir.intellij.cq5.jcr.LightNode;
+import velir.intellij.cq5.jcr.model.VNodeDefinition;
 import velir.intellij.cq5.ui.JcrTree;
 
 import javax.jcr.Node;
@@ -38,6 +39,8 @@ public class JcrViewComponent extends AbstractProjectComponent {
 	@Override
 	public void initComponent() {
 		super.initComponent();
+
+		VNodeDefinition.buildDefinitions();
 	}
 
 	private void setupToolWindow() {
