@@ -2,6 +2,7 @@ package velir.intellij.cq5.jcr.model;
 
 import com.intellij.openapi.ui.VerticalFlowLayout;
 import com.intellij.openapi.util.JDOMUtil;
+import com.intellij.ui.components.JBScrollPane;
 import org.jdom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,14 +52,10 @@ public class VNode {
 		namespaces = new HashMap<String, Namespace>();
 		namespaces.put("cq", Namespace.getNamespace("cq","http://www.day.com/jcr/cq/1.0"));
 		namespaces.put("jcr", Namespace.getNamespace("jcr","http://www.jcp.org/jcr/1.0"));
-
-		// set up node definitions
-		VNodeDefinition.buildDefinitions();
 	}
 
 	private String name;
 	private Map<String, Object> properties;
-	private JPanel primaryTypePanel; // store this so we can treat it special
 
 	public VNode (String name, String type) {
 		this.name = name;
@@ -543,20 +540,6 @@ public class VNode {
 				|| value instanceof Boolean[]
 				|| value instanceof String[]) {
 			addMultiValueProperty(jPanel, name, value);
-		} else if (JCR_PRIMARYTYPE.equals(name) && VNodeDefinition.hasDefinitions()) { // handle primaryType property as select
-			final JComboBox jComboBox = new JComboBox(VNodeDefinition.getNodeTypeNames());
-			primaryTypePanel = jPanel;
-			jComboBox.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					String newPrimaryType = (String) jComboBox.getSelectedItem();
-					setProperty(name, newPrimaryType);
-					// refresh properties
-					switchPrimaryType(parentPanel, VNodeDefinition.getDefinition(newPrimaryType).getPropertiesMap());
-				}
-			});
-			jComboBox.setSelectedItem(value);
-			jComboBox.setEditable(canAlter(name));
-			jPanel.add(jComboBox);
 		} else {
 			final JTextField jTextField = new JTextField(value.toString());
 			new DocumentListenerSingleAdder(name, jTextField, new Anonymous<String, Object>() {
@@ -584,9 +567,7 @@ public class VNode {
 	}
 
 	private void switchPrimaryType (JPanel propertiesPanel, Map<String,Object> newMap) {
-		for (Component component : propertiesPanel.getComponents()) {
-			if (! component.equals(primaryTypePanel)) propertiesPanel.remove(component);
-		}
+		propertiesPanel.removeAll();
 		properties = newMap;
 		for (Map.Entry<String,Object> property : properties.entrySet()) {
 			// don't add another primaryType selector
@@ -614,15 +595,38 @@ public class VNode {
 		namePanel.add(nameField);
 		nodePanel.add(namePanel);
 
+		// node primary type
+		JPanel primaryTypePanel = new JPanel(new GridLayout(1,2));
+		JLabel primaryTypeLabel = new JLabel("type");
+		primaryTypePanel.add(primaryTypeLabel);
+		final JPanel propertiesPanel = new JPanel(new VerticalFlowLayout());
+		final JComboBox jComboBox = new JComboBox(VNodeDefinition.getNodeTypeNames());
+		jComboBox.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					String newPrimaryType = (String) jComboBox.getSelectedItem();
+					setProperty(JCR_PRIMARYTYPE, newPrimaryType);
+					// refresh properties
+					switchPrimaryType(propertiesPanel, VNodeDefinition.getDefinition(newPrimaryType).getPropertiesMap());
+				}
+		});
+		jComboBox.setSelectedItem(getProperty(JCR_PRIMARYTYPE, String.class));
+		primaryTypePanel.add(jComboBox);
+		nodePanel.add(primaryTypePanel);
+
 		// separator
 		nodePanel.add(new JSeparator(JSeparator.HORIZONTAL));
 
 		// properties
-		final JPanel propertiesPanel = new JPanel(new VerticalFlowLayout());
 		for (Map.Entry<String,Object> property : properties.entrySet()) {
-			addPropertyPanel(propertiesPanel, property.getKey(), property.getValue());
+			if (! JCR_PRIMARYTYPE.equals(property.getKey())) { // don't add in primary type property
+				addPropertyPanel(propertiesPanel, property.getKey(), property.getValue());
+			}
 		}
-		nodePanel.add(propertiesPanel);
+		JBScrollPane jbScrollPane = new JBScrollPane(propertiesPanel,
+				JBScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		jbScrollPane.setPreferredSize(new Dimension(400, 500));
+		nodePanel.add(jbScrollPane);
 
 		// separator
 		nodePanel.add(new JSeparator(JSeparator.HORIZONTAL));
@@ -631,12 +635,12 @@ public class VNode {
 		JPanel newPropertyPanel = new JPanel(new GridLayout(1,2));
 		final JTextField jTextField = new JTextField();
 		newPropertyPanel.add(jTextField);
-		final JComboBox jComboBox = new JComboBox(TYPESTRINGS);
-		newPropertyPanel.add(jComboBox);
+		final JComboBox addPropertyCombo = new JComboBox(TYPESTRINGS);
+		newPropertyPanel.add(addPropertyCombo);
 		JButton jButton = new JButton("add property");
 		jButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String type = (String) jComboBox.getSelectedItem();
+				String type = (String) addPropertyCombo.getSelectedItem();
 				if (BOOLEAN_PREFIX.equals(type)) {
 					addPropertyPanel(propertiesPanel, jTextField.getText(), false);
 				} else if (LONG_PREFIX.equals(type)) {
