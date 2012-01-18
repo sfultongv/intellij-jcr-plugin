@@ -56,11 +56,14 @@ public class VNode {
 
 	private String name;
 	private Map<String, Object> properties;
+	private boolean canChangeType;
 
+	// constructor for new VNode, allows changing of type
 	public VNode (String name, String type) {
 		this.name = name;
 		properties = new HashMap<String, Object>();
 		properties.put(JCR_PRIMARYTYPE, type);
+		canChangeType = true;
 	}
 
 	protected void setProperty (String name, Object value) {
@@ -240,6 +243,7 @@ public class VNode {
 
 		if (o instanceof Long[]) {
 			final Set<RegexTextField> inputs = new HashSet<RegexTextField>();
+			final JPanel outerPanel = new JPanel(new VerticalFlowLayout());
 			final JPanel valuesPanel = new JPanel(new VerticalFlowLayout());
 
 			final Runnable setPropertyValues = new Runnable() {
@@ -288,6 +292,7 @@ public class VNode {
 			for (Long lo : (Long[]) o ) {
 				addValuePanel.process(lo);
 			}
+			outerPanel.add(valuesPanel);
 
 			// add new value button
 			JButton jButton = new JButton("Add");
@@ -298,12 +303,13 @@ public class VNode {
 					valuesPanel.revalidate();
 				}
 			});
-			valuesPanel.add(jButton);
+			outerPanel.add(jButton);
 
-			jPanel.add(valuesPanel);
+			jPanel.add(outerPanel);
 		}
 		else if (o instanceof Double[]) {
 			final Set<RegexTextField> inputs = new HashSet<RegexTextField>();
+			final JPanel outerPanel = new JPanel(new VerticalFlowLayout());
 			final JPanel valuesPanel = new JPanel(new VerticalFlowLayout());
 
 			final Runnable setPropertyValues = new Runnable() {
@@ -352,6 +358,7 @@ public class VNode {
 			for (Double lo : (Double[]) o ) {
 				addValuePanel.process(lo);
 			}
+			outerPanel.add(valuesPanel);
 
 			// add new value button
 			JButton jButton = new JButton("Add");
@@ -362,12 +369,13 @@ public class VNode {
 					valuesPanel.revalidate();
 				}
 			});
-			valuesPanel.add(jButton);
+			outerPanel.add(jButton);
 
-			jPanel.add(valuesPanel);
+			jPanel.add(outerPanel);
 		}
 		else if (o instanceof Boolean[]) {
 			final Set<JCheckBox> inputs = new HashSet<JCheckBox>();
+			final JPanel outerPanel = new JPanel(new VerticalFlowLayout());
 			final JPanel valuesPanel = new JPanel(new VerticalFlowLayout());
 
 			final Runnable setPropertyValues = new Runnable() {
@@ -416,6 +424,7 @@ public class VNode {
 			for (Boolean bo : (Boolean[]) o ) {
 				addValuePanel.process(bo);
 			}
+			outerPanel.add(valuesPanel);
 
 			// add new value button
 			JButton jButton = new JButton("Add");
@@ -426,12 +435,13 @@ public class VNode {
 					valuesPanel.revalidate();
 				}
 			});
-			valuesPanel.add(jButton);
+			outerPanel.add(jButton);
 
-			jPanel.add(valuesPanel);
+			jPanel.add(outerPanel);
 		}
 		else if (o instanceof String[]) {
 			final Set<JTextField> inputs = new HashSet<JTextField>();
+			final JPanel outerPanel = new JPanel(new VerticalFlowLayout());
 			final JPanel valuesPanel = new JPanel(new VerticalFlowLayout());
 
 			final Runnable setPropertyValues = new Runnable() {
@@ -480,6 +490,7 @@ public class VNode {
 			for (String s : (String[]) o ) {
 				addValuePanel.process(s);
 			}
+			outerPanel.add(valuesPanel);
 
 			// add new value button
 			JButton jButton = new JButton("Add");
@@ -490,9 +501,9 @@ public class VNode {
 					valuesPanel.revalidate();
 				}
 			});
-			valuesPanel.add(jButton);
+			outerPanel.add(jButton);
 
-			jPanel.add(valuesPanel);
+			jPanel.add(outerPanel);
 		}
 	}
 
@@ -600,17 +611,24 @@ public class VNode {
 		JLabel primaryTypeLabel = new JLabel("type");
 		primaryTypePanel.add(primaryTypeLabel);
 		final JPanel propertiesPanel = new JPanel(new VerticalFlowLayout());
-		final JComboBox jComboBox = new JComboBox(VNodeDefinition.getNodeTypeNames());
-		jComboBox.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					String newPrimaryType = (String) jComboBox.getSelectedItem();
-					setProperty(JCR_PRIMARYTYPE, newPrimaryType);
-					// refresh properties
-					switchPrimaryType(propertiesPanel, VNodeDefinition.getDefinition(newPrimaryType).getPropertiesMap());
-				}
-		});
-		jComboBox.setSelectedItem(getProperty(JCR_PRIMARYTYPE, String.class));
-		primaryTypePanel.add(jComboBox);
+		// only allow selecting of node type on node creation
+		if (canChangeType) {
+			final JComboBox jComboBox = new JComboBox(VNodeDefinition.getNodeTypeNames());
+			jComboBox.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						String newPrimaryType = (String) jComboBox.getSelectedItem();
+						setProperty(JCR_PRIMARYTYPE, newPrimaryType);
+						// refresh properties
+						switchPrimaryType(propertiesPanel, VNodeDefinition.getDefinition(newPrimaryType).getPropertiesMap());
+					}
+			});
+			jComboBox.setSelectedItem(getProperty(JCR_PRIMARYTYPE, String.class));
+			primaryTypePanel.add(jComboBox);
+		} else {
+			JTextField primaryTypeField = new JTextField(getProperty(JCR_PRIMARYTYPE, String.class));
+			primaryTypeField.setEditable(false);
+			primaryTypePanel.add(primaryTypeField);
+		}
 		nodePanel.add(primaryTypePanel);
 
 		// separator
@@ -745,6 +763,8 @@ public class VNode {
 		} catch (IOException ioe) {
 			log.error("Could not load VNode from inputstream", ioe);
 		}
+
+		vNode.canChangeType = false;
 
 		return vNode;
 	}
