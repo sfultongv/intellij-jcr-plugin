@@ -9,10 +9,13 @@ public class VComponent extends VNode {
 
 	public VComponent (String name) {
 		super(name, CQ_COMPONENT);
+
 		setProperty(CQ_ISCONTAINER, false);
 		setProperty(JCR_TITLE, "");
 		setProperty(ALLOWED_PARENTS, "*/parsys");
 		setProperty(COMPONENT_GROUP, "General");
+
+		canChangeType = false;
 	}
 
 	protected boolean canAlter (String name) {

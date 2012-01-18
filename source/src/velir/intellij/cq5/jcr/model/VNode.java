@@ -56,12 +56,18 @@ public class VNode {
 
 	private String name;
 	private Map<String, Object> properties;
-	private boolean canChangeType;
+	protected boolean canChangeType;
 
 	// constructor for new VNode, allows changing of type
 	public VNode (String name, String type) {
 		this.name = name;
-		properties = new HashMap<String, Object>();
+		// populate with the default fields of this type
+		VNodeDefinition vNodeDefinition = VNodeDefinition.getDefinition(type);
+		if (vNodeDefinition != null) {
+			properties = vNodeDefinition.getPropertiesMap(false);
+		} else {
+			properties = new HashMap<String, Object>();
+		}
 		properties.put(JCR_PRIMARYTYPE, type);
 		canChangeType = true;
 	}
@@ -614,15 +620,16 @@ public class VNode {
 		// only allow selecting of node type on node creation
 		if (canChangeType) {
 			final JComboBox jComboBox = new JComboBox(VNodeDefinition.getNodeTypeNames());
+			jComboBox.setSelectedItem(getProperty(JCR_PRIMARYTYPE, String.class));
 			jComboBox.addActionListener(new ActionListener() {
 					public void actionPerformed(ActionEvent e) {
 						String newPrimaryType = (String) jComboBox.getSelectedItem();
-						setProperty(JCR_PRIMARYTYPE, newPrimaryType);
 						// refresh properties
-						switchPrimaryType(propertiesPanel, VNodeDefinition.getDefinition(newPrimaryType).getPropertiesMap());
+						switchPrimaryType(propertiesPanel, VNodeDefinition.getDefinition(newPrimaryType).getPropertiesMap(false));
+
+						setProperty(JCR_PRIMARYTYPE, newPrimaryType);
 					}
 			});
-			jComboBox.setSelectedItem(getProperty(JCR_PRIMARYTYPE, String.class));
 			primaryTypePanel.add(jComboBox);
 		} else {
 			JTextField primaryTypeField = new JTextField(getProperty(JCR_PRIMARYTYPE, String.class));

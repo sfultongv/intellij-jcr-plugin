@@ -3,18 +3,15 @@ package velir.intellij.cq5.jcr.model;
 import com.intellij.openapi.diagnostic.Logger;
 import velir.intellij.cq5.jcr.Connection;
 
-import javax.jcr.Node;
-import javax.jcr.NodeIterator;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import javax.jcr.*;
+import java.util.*;
 
 public class VNodeDefinition {
+	public static final String JCR_ISMIXIN = "jcr:isMixin";
 	public static final String JCR_NAME = "jcr:name";
 	public static final String JCR_NODETYPENAME = "jcr:nodeTypeName";
 	public static final String JCR_ONPARENTVERSION = "jcr:onParentVersion";
+	public static final String JCR_SUPERTYPES = "jcr:supertypes";
 	public static final String NT_PROPERTYDEFINITION = "nt:propertyDefinition";
 
 	private static final Logger log = com.intellij.openapi.diagnostic.Logger.getInstance(VNodeDefinition.class);
@@ -22,7 +19,9 @@ public class VNodeDefinition {
 	private static Map<String,VNodeDefinition> allNodes;
 
 	private Map<String,VPropertyDefinition> properties;
+	private Set<String> parents;
 	private boolean canAddProperties;
+	private boolean isMixin;
 	private String name;
 
 	public VNodeDefinition (Node node) throws RepositoryException {
@@ -50,14 +49,35 @@ public class VNodeDefinition {
 				}
 			}
 		}
+
+		// do parents
+		parents = new HashSet<String>();
+		if (node.hasProperty(JCR_SUPERTYPES)) {
+			for (Value value : node.getProperty(JCR_SUPERTYPES).getValues()) {
+				parents.add(value.getString());
+			}
+		}
+
+		// set mixin status
+		isMixin = node.hasProperty(JCR_ISMIXIN) && node.getProperty(JCR_ISMIXIN).getBoolean();
 	}
 
-	public Map<String, Object> getPropertiesMap () {
+	public Map<String, Object> getPropertiesMap (boolean includePrimaryType) {
 		Map<String,Object> propertiesMap = new HashMap<String, Object>();
 		for (Map.Entry<String, VPropertyDefinition> entry : properties.entrySet()) {
 			propertiesMap.put(entry.getKey(), entry.getValue().getDefaultValue());
 		}
-		propertiesMap.put(VNode.JCR_PRIMARYTYPE, name);
+		if (includePrimaryType) propertiesMap.put(VNode.JCR_PRIMARYTYPE, name);
+
+		// also get supertype properties
+		for (String parentName : parents) {
+			VNodeDefinition vNodeDefinition = VNodeDefinition.getDefinition(parentName);
+			if (vNodeDefinition != null) propertiesMap.putAll(vNodeDefinition.getPropertiesMap(false));
+			else {
+				log.error("Could not get definition for " + parentName);
+			}
+		}
+
 		return propertiesMap;
 	}
 
@@ -87,9 +107,18 @@ public class VNodeDefinition {
 		return ! allNodes.isEmpty();
 	}
 
+	// only include non-mixin types
 	public static String[] getNodeTypeNames () {
-		String[] options = new String[allNodes.size()];
-		options = allNodes.keySet().toArray(options);
+		// filter mixins out
+		Set<String> keySet = allNodes.keySet();
+		Set<String> copySet = new HashSet<String>();
+		for (String s : keySet) copySet.add(s); // do I really need to do this, java?
+		for (String s : keySet) {
+			if (getDefinition(s).isMixin) copySet.remove(s);
+		}
+
+		String[] options = new String[copySet.size()];
+		options = copySet.toArray(options);
 		Arrays.sort(options);
 		return options;
 	}
