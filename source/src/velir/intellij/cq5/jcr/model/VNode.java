@@ -52,6 +52,8 @@ public class VNode {
 		namespaces = new HashMap<String, Namespace>();
 		namespaces.put("cq", Namespace.getNamespace("cq","http://www.day.com/jcr/cq/1.0"));
 		namespaces.put("jcr", Namespace.getNamespace("jcr","http://www.jcp.org/jcr/1.0"));
+		namespaces.put("sling", Namespace.getNamespace("sling", "http://sling.apache.org/jcr/sling/1.0"));
+		namespaces.put("slingevent", Namespace.getNamespace("slingevent", "http://sling.apache.org/jcr/sling/1.0"));
 	}
 
 	private String name;
@@ -586,10 +588,14 @@ public class VNode {
 	private void switchPrimaryType (JPanel propertiesPanel, Map<String,Object> newMap) {
 		propertiesPanel.removeAll();
 		properties = newMap;
-		for (Map.Entry<String,Object> property : properties.entrySet()) {
+		String[] propertyKeys = new String[properties.size()];
+		propertyKeys = properties.keySet().toArray(propertyKeys);
+		Arrays.sort(propertyKeys);
+
+		for (String key : propertyKeys) {
 			// don't add another primaryType selector
-			if (! JCR_PRIMARYTYPE.equals(property.getKey())) {
-				addPropertyPanel(propertiesPanel, property.getKey(), property.getValue());
+			if (! JCR_PRIMARYTYPE.equals(key)) {
+				addPropertyPanel(propertiesPanel, key, properties.get(key));
 			}
 		}
 		propertiesPanel.revalidate();
@@ -642,9 +648,12 @@ public class VNode {
 		nodePanel.add(new JSeparator(JSeparator.HORIZONTAL));
 
 		// properties
-		for (Map.Entry<String,Object> property : properties.entrySet()) {
-			if (! JCR_PRIMARYTYPE.equals(property.getKey())) { // don't add in primary type property
-				addPropertyPanel(propertiesPanel, property.getKey(), property.getValue());
+		String[] propertyKeys = new String[properties.size()];
+		propertyKeys = properties.keySet().toArray(propertyKeys);
+		Arrays.sort(propertyKeys);
+		for (String key : propertyKeys) {
+			if (! JCR_PRIMARYTYPE.equals(key)) { // don't add in primary type property
+				addPropertyPanel(propertiesPanel, key, properties.get(key));
 			}
 		}
 		JBScrollPane jbScrollPane = new JBScrollPane(propertiesPanel,
