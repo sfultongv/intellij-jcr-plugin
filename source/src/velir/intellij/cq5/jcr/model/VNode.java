@@ -124,6 +124,10 @@ public class VNode {
 		this.name = name;
 	}
 
+	public String getType () {
+		return getProperty(JCR_PRIMARYTYPE, String.class);
+	}
+
 	private String getStringValue (Object o) {
 
 		if (o instanceof Long) {

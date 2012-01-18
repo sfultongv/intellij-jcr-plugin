@@ -35,6 +35,38 @@
               description="edit a jcr node">
 		  <add-to-group group-id="ProjectViewPopupMenu" anchor="last" />
       </action>
+	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator" class="velir.intellij.cq5.actions.content.ContextNodeCreator"
+	          text="New Contextual Node" description="add an in-context node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.NewNode" />
+      </action>
+	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator2" class="velir.intellij.cq5.actions.content.ContextNodeCreator2"
+	          text="New Contextual Node" description="add an in-context node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.ContentNodeCreator" />
+	  </action>
+	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator3" class="velir.intellij.cq5.actions.content.ContextNodeCreator3"
+	          text="New Contextual Node" description="add an in-context node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.ContentNodeCreator2" />
+	  </action>
+	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator4" class="velir.intellij.cq5.actions.content.ContextNodeCreator4"
+	          text="New Contextual Node" description="add an in-context node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.ContentNodeCreator3" />
+	  </action>
+	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator5" class="velir.intellij.cq5.actions.content.ContextNodeCreator5"
+	          text="New Contextual Node" description="add an in-context node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.ContentNodeCreator4" />
+	  </action>
+	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator6" class="velir.intellij.cq5.actions.content.ContextNodeCreator6"
+	          text="New Contextual Node" description="add an in-context node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.ContentNodeCreator5" />
+	  </action>
+	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator7" class="velir.intellij.cq5.actions.content.ContextNodeCreator7"
+	          text="New Contextual Node" description="add an in-context node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.ContentNodeCreator6" />
+	  </action>
+	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator8" class="velir.intellij.cq5.actions.content.ContextNodeCreator8"
+	          text="New Contextual Node" description="add an in-context node">
+		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.ContentNodeCreator7" />
+	  </action>
   </actions>
 
   <extensions defaultExtensionNs="com.intellij">

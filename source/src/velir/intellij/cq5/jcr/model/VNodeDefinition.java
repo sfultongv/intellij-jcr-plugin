@@ -7,11 +7,13 @@ import javax.jcr.*;
 import java.util.*;
 
 public class VNodeDefinition {
+	public static final String JCR_DEFAULTPRIMARYTYPE = "jcr:defaultPrimaryType";
 	public static final String JCR_ISMIXIN = "jcr:isMixin";
 	public static final String JCR_NAME = "jcr:name";
 	public static final String JCR_NODETYPENAME = "jcr:nodeTypeName";
 	public static final String JCR_ONPARENTVERSION = "jcr:onParentVersion";
 	public static final String JCR_SUPERTYPES = "jcr:supertypes";
+	public static final String NT_CHILDNODEDEFINITION = "nt:childNodeDefinition";
 	public static final String NT_PROPERTYDEFINITION = "nt:propertyDefinition";
 
 	private static final Logger log = com.intellij.openapi.diagnostic.Logger.getInstance(VNodeDefinition.class);
@@ -19,7 +21,8 @@ public class VNodeDefinition {
 	private static Map<String,VNodeDefinition> allNodes;
 
 	private Map<String,VPropertyDefinition> properties;
-	private Set<String> parents;
+	private Set<String> supertypes;
+	private Map<String,String> childSuggestions;
 	private boolean canAddProperties;
 	private boolean isMixin;
 	private String name;
@@ -29,32 +32,44 @@ public class VNodeDefinition {
 
 		// do properties
 		properties = new HashMap<String, VPropertyDefinition>();
+		childSuggestions = new HashMap<String, String>();
 		NodeIterator nodeIterator = node.getNodes();
 		while (nodeIterator.hasNext()) {
-			Node propertyNode = nodeIterator.nextNode();
+			Node definitionNode = nodeIterator.nextNode();
+			String nodeType = definitionNode.getProperty(VNode.JCR_PRIMARYTYPE).getString();
 
 			// do a property
-			if (NT_PROPERTYDEFINITION.equals(propertyNode.getProperty(VNode.JCR_PRIMARYTYPE).getString())) {
+			if (NT_PROPERTYDEFINITION.equals(nodeType)) {
 				String propertyName = "*"; // default to wildcard name
-				if (propertyNode.hasProperty(JCR_NAME)) {
+				if (definitionNode.hasProperty(JCR_NAME)) {
 
 					// only add non-computed properties
-					if (! "COMPUTED".equals(propertyNode.getProperty(JCR_ONPARENTVERSION).getString())) {
-						propertyName = propertyNode.getProperty(JCR_NAME).getString();
-						properties.put(propertyName, new VPropertyDefinition(propertyNode));
+					if (! "COMPUTED".equals(definitionNode.getProperty(JCR_ONPARENTVERSION).getString())) {
+						propertyName = definitionNode.getProperty(JCR_NAME).getString();
+						properties.put(propertyName, new VPropertyDefinition(definitionNode));
 					}
 				} else {
 					// property with no name means this node can accept custom properties
 					canAddProperties = true;
 				}
 			}
+
+			// do a child suggestion
+			if (NT_CHILDNODEDEFINITION.equals(nodeType)) {
+				String childName = "*";
+				// only do well-defined childnodedefinitions with the following 2 jcr properties
+				if (definitionNode.hasProperty(JCR_NAME) && definitionNode.hasProperty(JCR_DEFAULTPRIMARYTYPE)) {
+					childSuggestions.put(definitionNode.getProperty(JCR_NAME).getString(),
+							definitionNode.getProperty(JCR_DEFAULTPRIMARYTYPE).getString());
+				}
+			}
 		}
 
-		// do parents
-		parents = new HashSet<String>();
+		// do supertypes
+		supertypes = new HashSet<String>();
 		if (node.hasProperty(JCR_SUPERTYPES)) {
 			for (Value value : node.getProperty(JCR_SUPERTYPES).getValues()) {
-				parents.add(value.getString());
+				supertypes.add(value.getString());
 			}
 		}
 
@@ -70,15 +85,19 @@ public class VNodeDefinition {
 		if (includePrimaryType) propertiesMap.put(VNode.JCR_PRIMARYTYPE, name);
 
 		// also get supertype properties
-		for (String parentName : parents) {
-			VNodeDefinition vNodeDefinition = VNodeDefinition.getDefinition(parentName);
+		for (String supertype : supertypes) {
+			VNodeDefinition vNodeDefinition = VNodeDefinition.getDefinition(supertype);
 			if (vNodeDefinition != null) propertiesMap.putAll(vNodeDefinition.getPropertiesMap(false));
 			else {
-				log.error("Could not get definition for " + parentName);
+				log.error("Could not get definition for " + supertype );
 			}
 		}
 
 		return propertiesMap;
+	}
+
+	public Map<String, String> getChildSuggestions() {
+		return childSuggestions;
 	}
 
 	public static void buildDefinitions () {
