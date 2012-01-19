@@ -24,7 +24,7 @@ public class NodeDialog extends DialogWrapper {
 
 	@Override
 	protected JComponent createCenterPanel() {
-		return vNode.makePanel(isNew);
+		return (new NodeDialogConnector(isNew, isNew, vNode)).getRootPanel();
 	}
 
 	public VNode getVNode() {

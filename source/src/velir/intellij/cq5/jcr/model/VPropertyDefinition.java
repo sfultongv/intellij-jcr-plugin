@@ -1,12 +1,13 @@
 package velir.intellij.cq5.jcr.model;
 
+import com.intellij.openapi.util.Computable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 
-public class VPropertyDefinition {
+public class VPropertyDefinition implements VPropertyDefinitionI {
 	public static final String STRING = "STRING";
 	public static final String URI = "URI";
 	public static final String BINARY = "BINARY";
@@ -31,10 +32,9 @@ public class VPropertyDefinition {
 	VPropertyDefinition (Node node) throws RepositoryException {
 			type = node.getProperty(JCR_REQUIREDTYPE).getString();
 			multiValued = node.getProperty(JCR_MULTIPLE).getBoolean();
-
 	}
 
-	Object getDefaultValue() {
+	public Object getDefaultValue() {
 		if (multiValued) {
 			if (LONG.equals(type)) return new Long[] {0L};
 			else if (DOUBLE.equals(type)) return new Double[] {0.0D};

@@ -1,6 +1,7 @@
 package velir.intellij.cq5.jcr.model;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.util.Computable;
 import velir.intellij.cq5.jcr.Connection;
 
 import javax.jcr.*;
@@ -15,12 +16,18 @@ public class VNodeDefinition {
 	public static final String JCR_SUPERTYPES = "jcr:supertypes";
 	public static final String NT_CHILDNODEDEFINITION = "nt:childNodeDefinition";
 	public static final String NT_PROPERTYDEFINITION = "nt:propertyDefinition";
+	public static final String CQ_COMPONENT = "cq:Component";
+	public static final String CQ_ISCONTAINER = "cq:isContainer";
+	public static final String CQ_DIALOG = "cq:Dialog";
+	public static final String JCR_TITLE = "jcr:title";
+	public static final String ALLOWED_PARENTS = "allowedParents";
+	public static final String COMPONENT_GROUP = "componentGroup";
 
 	private static final Logger log = com.intellij.openapi.diagnostic.Logger.getInstance(VNodeDefinition.class);
 
 	private static Map<String,VNodeDefinition> allNodes;
 
-	private Map<String,VPropertyDefinition> properties;
+	private Map<String,VPropertyDefinitionI> properties;
 	private Set<String> supertypes;
 	private Map<String,String> childSuggestions;
 	private boolean canAddProperties;
@@ -31,7 +38,7 @@ public class VNodeDefinition {
 		name = node.getProperty(JCR_NODETYPENAME).getString();
 
 		// do properties
-		properties = new HashMap<String, VPropertyDefinition>();
+		properties = new HashMap<String, VPropertyDefinitionI>();
 		childSuggestions = new HashMap<String, String>();
 		NodeIterator nodeIterator = node.getNodes();
 		while (nodeIterator.hasNext()) {
@@ -79,7 +86,7 @@ public class VNodeDefinition {
 
 	public Map<String, Object> getPropertiesMap (boolean includePrimaryType) {
 		Map<String,Object> propertiesMap = new HashMap<String, Object>();
-		for (Map.Entry<String, VPropertyDefinition> entry : properties.entrySet()) {
+		for (Map.Entry<String, VPropertyDefinitionI> entry : properties.entrySet()) {
 			propertiesMap.put(entry.getKey(), entry.getValue().getDefaultValue());
 		}
 		if (includePrimaryType) propertiesMap.put(VNode.JCR_PRIMARYTYPE, name);
@@ -112,7 +119,9 @@ public class VNodeDefinition {
 			while (nodeIterator.hasNext()) {
 				Node node = nodeIterator.nextNode();
 				nodeName = node.getName();
-				allNodes.put(nodeName, new VNodeDefinition(node));
+				VNodeDefinition vNodeDefinition = new VNodeDefinition(node);
+				customizeDefinition(vNodeDefinition); //possibly customize this definition
+				allNodes.put(nodeName, vNodeDefinition);
 			}
 			log.info("finished building nodes");
 		} catch (RepositoryException re) {
@@ -120,6 +129,27 @@ public class VNodeDefinition {
 		} finally {
 			if (session != null) session.logout();
 		}
+	}
+
+	// extend the lacking JCR definitions
+	public static void customizeDefinition (VNodeDefinition vNodeDefinition) {
+		String name = vNodeDefinition.name;
+
+		if (CQ_COMPONENT.equals(name)) {
+			vNodeDefinition.properties.put(ALLOWED_PARENTS, new VPropertyDefinitionI() {
+				public Object getDefaultValue() {
+					return "*/parsys";
+				}
+			});
+			vNodeDefinition.properties.put(COMPONENT_GROUP, new VPropertyDefinitionI() {
+				public Object getDefaultValue() {
+					return "General";
+				}
+			});
+			vNodeDefinition.childSuggestions.put("dialog", CQ_DIALOG);
+			vNodeDefinition.childSuggestions.put("design_dialog", CQ_DIALOG);
+		}
+
 	}
 
 	public static boolean hasDefinitions () {
