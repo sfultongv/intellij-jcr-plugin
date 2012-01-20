@@ -35,6 +35,10 @@
               description="edit a jcr node">
 		  <add-to-group group-id="ProjectViewPopupMenu" anchor="last" />
       </action>
+	  <action id="velir.intellij.cq5.actions.content.UnpackXml" class="velir.intellij.cq5.actions.content.UnpackXml" text="Unpack Node XML"
+	          description="unpacks subelements from xml, and creates folders for them">
+		  <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.EditNode"/>
+	  </action>
 	  <action id="velir.intellij.cq5.actions.content.ContextNodeCreator" class="velir.intellij.cq5.actions.content.ContextNodeCreator"
 	          text="New Contextual Node" description="add an in-context node">
 		  <add-to-group group-id="NewGroup" anchor="after" relative-to-action="velir.intellij.cq5.actions.content.NewNode" />

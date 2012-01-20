@@ -7,16 +7,12 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.util.JDOMUtil;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiFile;
-import org.jdom.Document;
 import velir.intellij.cq5.jcr.model.VNode;
 import velir.intellij.cq5.ui.NodeDialog;
+import velir.intellij.cq5.util.PsiUtils;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 public abstract class ANewNode extends AnAction {
 	@Override
@@ -35,18 +31,11 @@ public abstract class ANewNode extends AnAction {
 			for (final PsiDirectory dir : dirs) {
 				application.runWriteAction(new Runnable() {
 					public void run() {
-						PsiDirectory contentDirectory = dir.createSubdirectory(vNode.getName());
-						PsiFile contentFile = contentDirectory.createFile(".content.xml");
-						VirtualFile virtualFile = contentFile.getVirtualFile();
 						try {
-							OutputStream outputStream = virtualFile.getOutputStream(vNode);
-							Document document = new Document(vNode.getElement());
-							JDOMUtil.writeDocument(document, outputStream, "\n");
-							outputStream.close();
+							PsiUtils.createNode(dir, vNode);
 						} catch (IOException ioe) {
 							Messages.showMessageDialog(project, "Could not write to content file", "Error", Messages.getErrorIcon());
 						}
-
 					}
 				});
 			}

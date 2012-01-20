@@ -8,18 +8,16 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.Computable;
-import com.intellij.openapi.util.JDOMUtil;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import org.jdom.Document;
+import org.jdom.JDOMException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import velir.intellij.cq5.jcr.model.VNode;
 import velir.intellij.cq5.ui.NodeDialog;
+import velir.intellij.cq5.util.PsiUtils;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 public class EditNode extends AnAction {
 	private static final Logger log = LoggerFactory.getLogger(EditNode.class);
@@ -57,9 +55,13 @@ public class EditNode extends AnAction {
 			VNode vNode = application.runReadAction(new Computable<VNode>() {
 				public VNode compute() {
 					try {
-						return VNode.makeVNode(psiFile.getVirtualFile().getInputStream(), psiFile.getContainingDirectory().getName());
+						String name = PsiUtils.unmungeNamespace(psiFile.getContainingDirectory().getName());
+						return VNode.makeVNode(psiFile.getVirtualFile().getInputStream(), name);
 					} catch (IOException ioe) {
 						log.error("Could not read node xml", ioe);
+						Messages.showMessageDialog(project, "Could not read node xml", "Error", Messages.getErrorIcon());
+					} catch (JDOMException jde) {
+						log.error("Could not read node xml", jde);
 						Messages.showMessageDialog(project, "Could not read node xml", "Error", Messages.getErrorIcon());
 					}
 					return null;
@@ -75,12 +77,8 @@ public class EditNode extends AnAction {
 				final VNode newNode = nodeDialog.getVNode();
 				application.runWriteAction(new Runnable() {
 					public void run() {
-						VirtualFile virtualFile = psiFile.getVirtualFile();
 						try {
-							OutputStream outputStream = virtualFile.getOutputStream(newNode);
-							Document document = new Document(newNode.getElement());
-							JDOMUtil.writeDocument(document, outputStream, "\n");
-							outputStream.close();
+							PsiUtils.writeNodeContent(psiFile, newNode);
 						} catch (IOException ioe) {
 							Messages.showMessageDialog(project, "Could not write to content file", "Error", Messages.getErrorIcon());
 						}

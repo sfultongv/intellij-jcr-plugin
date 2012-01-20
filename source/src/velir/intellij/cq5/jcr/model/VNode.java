@@ -1,20 +1,9 @@
 package velir.intellij.cq5.jcr.model;
 
-import com.intellij.openapi.ui.VerticalFlowLayout;
 import com.intellij.openapi.util.JDOMUtil;
-import com.intellij.ui.components.JBScrollPane;
 import org.jdom.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import velir.intellij.cq5.ui.RegexTextField;
-import velir.intellij.cq5.util.Anonymous;
-
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -59,6 +48,12 @@ public class VNode {
 	private String name;
 	private Map<String, Object> properties;
 	protected boolean canChangeType;
+
+	private VNode (String name) {
+		this.name = name;
+		properties = new HashMap<String, Object>();
+		canChangeType = false;
+	}
 
 	// constructor for new VNode, allows changing of type
 	public VNode (String name, String type) {
@@ -173,7 +168,7 @@ public class VNode {
 	}
 
 	public Element getElement() {
-		Element element = new Element(name);
+		Element element = new Element("root", namespaces.get("jcr"));
 		Set<String> elementNamespaces = new HashSet<String>();
 
 		// properties
@@ -216,89 +211,85 @@ public class VNode {
 		return element;
 	}
 
-	interface Callback<T> {
-		public void process(T t);
+	public static VNode makeVNode (InputStream inputStream, String name) throws JDOMException, IOException {
+		VNode vNode = makeVNode(inputStream);
+		vNode.setName(name);
+		return vNode;
 	}
 
+	public static VNode makeVNode (InputStream inputStream) throws JDOMException, IOException {
+		Document document = JDOMUtil.loadDocument(inputStream);
+		final Element element = document.getRootElement();
+		return makeVNode(element);
+	}
 
+	public static VNode makeVNode (final Element element) throws JDOMException, IOException {
+		String name = element.getName();
+		String namespace = element.getNamespacePrefix();
+		if (!namespace.equals("")) name = namespace + ":" + name;
+		VNode vNode = new VNode(name);
 
+		for (Object o : element.getAttributes()) {
+			Attribute attribute = (Attribute) o;
 
-	public static VNode makeVNode (InputStream inputStream, String name) {
-		VNode vNode = null;
-		try {
-			Document document = JDOMUtil.loadDocument(inputStream);
-			final Element element = document.getRootElement();
+			String propertyName = attribute.getQualifiedName();
+			String value = attribute.getValue();
 
-			vNode = new VNode(name, "_dummy_");
-
-			for (Object o : element.getAttributes()) {
-				Attribute attribute = (Attribute) o;
-
-				String propertyName = attribute.getQualifiedName();
-				String value = attribute.getValue();
-
-				// choose which type of object to insert
-				if (value.startsWith(BOOLEAN_PREFIX + "[")) {
-					Boolean[] vals;
-					String valuesString = value.substring(0, value.length() - 1).replaceFirst(Pattern.quote(BOOLEAN_PREFIX + "["), "");
-					if ("".equals(valuesString)) vals = new Boolean[0];
-					else {
-						String[] valueBits = valuesString.split(",");
-						vals = new Boolean[valueBits.length];
-						for (int i = 0; i < valueBits.length; i++) {
-							vals[i] = Boolean.parseBoolean(valueBits[i]);
-						}
+			// choose which type of object to insert
+			if (value.startsWith(BOOLEAN_PREFIX + "[")) {
+				Boolean[] vals;
+				String valuesString = value.substring(0, value.length() - 1).replaceFirst(Pattern.quote(BOOLEAN_PREFIX + "["), "");
+				if ("".equals(valuesString)) vals = new Boolean[0];
+				else {
+					String[] valueBits = valuesString.split(",");
+					vals = new Boolean[valueBits.length];
+					for (int i = 0; i < valueBits.length; i++) {
+						vals[i] = Boolean.parseBoolean(valueBits[i]);
 					}
-					vNode.setProperty(propertyName, vals);
-				} else if (value.startsWith(BOOLEAN_PREFIX)) {
-					Boolean b = Boolean.parseBoolean(value.replaceFirst(Pattern.quote(BOOLEAN_PREFIX), ""));
-					vNode.setProperty(propertyName, b);
-				} else if (value.startsWith(DOUBLE_PREFIX + "[")) {
-					Double[] vals;
-					String valuesString = value.substring(0, value.length() - 1).replaceFirst(Pattern.quote(DOUBLE_PREFIX + "["), "");
-					if ("".equals(valuesString)) vals = new Double[0];
-					else {
-						String[] valueBits = valuesString.split(",");
-						vals = new Double[valueBits.length];
-						for (int i = 0; i < valueBits.length; i++) {
-							vals[i] = Double.parseDouble(valueBits[i]);
-						}
-					}
-					vNode.setProperty(propertyName, vals);
-				} else if (value.startsWith(DOUBLE_PREFIX)) {
-					Double d = Double.parseDouble(value.replaceFirst(Pattern.quote(DOUBLE_PREFIX), ""));
-					vNode.setProperty(propertyName, d);
-				} else if (value.startsWith(LONG_PREFIX + "[")) {
-					Long[] vals;
-					String valuesString = value.substring(0, value.length() - 1).replaceFirst(Pattern.quote(LONG_PREFIX + "["), "");
-					if ("".equals(valuesString)) vals = new Long[0];
-					else {
-						String[] valueBits = valuesString.split(",");
-						vals = new Long[valueBits.length];
-						for (int i = 0; i < valueBits.length; i++) {
-							vals[i] = Long.parseLong(valueBits[i]);
-						}
-					}
-					vNode.setProperty(propertyName, vals);
-				} else if (value.startsWith(LONG_PREFIX)) {
-					Long l = Long.parseLong(value.replaceFirst(Pattern.quote(LONG_PREFIX), ""));
-					vNode.setProperty(propertyName, l);
-				} else if (value.startsWith("[")) {
-					String[] vals;
-					String valuesString = value.substring(1, value.length() - 1);
-					if ("".equals(valuesString)) vals = new String[0];
-					else  vals = valuesString.split(",");
-					vNode.setProperty(propertyName, vals);
-				} else {
-					vNode.setProperty(propertyName, value);
 				}
+				vNode.setProperty(propertyName, vals);
+			} else if (value.startsWith(BOOLEAN_PREFIX)) {
+				Boolean b = Boolean.parseBoolean(value.replaceFirst(Pattern.quote(BOOLEAN_PREFIX), ""));
+				vNode.setProperty(propertyName, b);
+			} else if (value.startsWith(DOUBLE_PREFIX + "[")) {
+				Double[] vals;
+				String valuesString = value.substring(0, value.length() - 1).replaceFirst(Pattern.quote(DOUBLE_PREFIX + "["), "");
+				if ("".equals(valuesString)) vals = new Double[0];
+				else {
+					String[] valueBits = valuesString.split(",");
+					vals = new Double[valueBits.length];
+					for (int i = 0; i < valueBits.length; i++) {
+						vals[i] = Double.parseDouble(valueBits[i]);
+					}
+				}
+				vNode.setProperty(propertyName, vals);
+			} else if (value.startsWith(DOUBLE_PREFIX)) {
+				Double d = Double.parseDouble(value.replaceFirst(Pattern.quote(DOUBLE_PREFIX), ""));
+				vNode.setProperty(propertyName, d);
+			} else if (value.startsWith(LONG_PREFIX + "[")) {
+				Long[] vals;
+				String valuesString = value.substring(0, value.length() - 1).replaceFirst(Pattern.quote(LONG_PREFIX + "["), "");
+				if ("".equals(valuesString)) vals = new Long[0];
+				else {
+					String[] valueBits = valuesString.split(",");
+					vals = new Long[valueBits.length];
+					for (int i = 0; i < valueBits.length; i++) {
+						vals[i] = Long.parseLong(valueBits[i]);
+					}
+				}
+				vNode.setProperty(propertyName, vals);
+			} else if (value.startsWith(LONG_PREFIX)) {
+				Long l = Long.parseLong(value.replaceFirst(Pattern.quote(LONG_PREFIX), ""));
+				vNode.setProperty(propertyName, l);
+			} else if (value.startsWith("[")) {
+				String[] vals;
+				String valuesString = value.substring(1, value.length() - 1);
+				if ("".equals(valuesString)) vals = new String[0];
+				else  vals = valuesString.split(",");
+				vNode.setProperty(propertyName, vals);
+			} else {
+				vNode.setProperty(propertyName, value);
 			}
-
-		} catch (JDOMException jde) {
-			log.error("Could not load VNode from inputstream", jde);
-
-		} catch (IOException ioe) {
-			log.error("Could not load VNode from inputstream", ioe);
 		}
 
 		vNode.canChangeType = false;

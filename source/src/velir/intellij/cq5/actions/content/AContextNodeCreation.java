@@ -9,6 +9,7 @@ import com.intellij.openapi.util.Computable;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import org.jdom.JDOMException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import velir.intellij.cq5.jcr.model.VNode;
@@ -47,6 +48,9 @@ public abstract class AContextNodeCreation extends ANewNode {
 							return VNode.makeVNode(contentFile.getVirtualFile().getInputStream(), contentFile.getContainingDirectory().getName());
 						} catch (IOException ioe) {
 							log.error("Could not read node xml", ioe);
+							Messages.showMessageDialog(project, "Could not read node xml", "Error", Messages.getErrorIcon());
+						} catch (JDOMException jde) {
+							log.error("Could not read node xml", jde);
 							Messages.showMessageDialog(project, "Could not read node xml", "Error", Messages.getErrorIcon());
 						}
 						return null;
