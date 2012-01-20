@@ -518,6 +518,7 @@ public class NodeDialogConnector {
 			public void actionPerformed(ActionEvent e) {
 				parentPanel.remove(jPanel);
 				parentPanel.revalidate();
+				parentPanel.repaint();
 				removeProperty(name);
 			}
 		});
