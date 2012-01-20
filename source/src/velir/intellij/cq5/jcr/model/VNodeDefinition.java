@@ -20,6 +20,9 @@ public class VNodeDefinition {
 	public static final String CQ_COMPONENT = "cq:Component";
 	public static final String CQ_ISCONTAINER = "cq:isContainer";
 	public static final String CQ_DIALOG = "cq:Dialog";
+	public static final String CQ_TABPANEL = "cq:TabPanel";
+	public static final String CQ_WIDGET = "cq:Widget";
+	public static final String CQ_WIDGETCOLLECTION = "cq:WidgetCollection";
 	public static final String JCR_TITLE = "jcr:title";
 	public static final String ALLOWED_PARENTS = "allowedParents";
 	public static final String COMPONENT_GROUP = "componentGroup";
@@ -105,7 +108,17 @@ public class VNodeDefinition {
 	}
 
 	public Map<String, String> getChildSuggestions() {
-		return childSuggestions;
+		Map<String, String> suggestions = new HashMap<String, String>();
+		// get supertype child suggestions
+		for (String supertype : supertypes) {
+			VNodeDefinition vNodeDefinition = VNodeDefinition.getDefinition(supertype);
+			suggestions.putAll(vNodeDefinition.getChildSuggestions());
+		}
+
+		// now put in this node's suggestions
+		suggestions.putAll(childSuggestions);
+
+		return suggestions;
 	}
 
 	public static void buildDefinitions () {
@@ -157,8 +170,12 @@ public class VNodeDefinition {
 					return "dialog";
 				}
 			});
+			vNodeDefinition.childSuggestions.put("items", CQ_TABPANEL);
 		}
 
+		else if (CQ_WIDGETCOLLECTION.equals(name)) {
+			vNodeDefinition.childSuggestions.put("widget", CQ_WIDGET);
+		}
 	}
 
 	public static boolean hasDefinitions () {
