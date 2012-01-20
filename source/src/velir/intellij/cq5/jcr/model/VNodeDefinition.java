@@ -151,6 +151,14 @@ public class VNodeDefinition {
 			vNodeDefinition.childSuggestions.put("design_dialog", CQ_DIALOG);
 		}
 
+		else if (CQ_DIALOG.equals(name)) {
+			vNodeDefinition.properties.put("xtype", new VPropertyDefinitionI() {
+				public Object getDefaultValue() {
+					return "dialog";
+				}
+			});
+		}
+
 	}
 
 	public static boolean hasDefinitions () {
