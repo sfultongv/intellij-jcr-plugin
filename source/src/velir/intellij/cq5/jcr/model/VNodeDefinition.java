@@ -139,7 +139,7 @@ public class VNodeDefinition {
 			}
 			log.info("finished building nodes");
 		} catch (RepositoryException re) {
-			log.error("Could not build node definitions, died at " + nodeName, re);
+			log.warn("Could not build node definitions, died at " + nodeName, re);
 		} finally {
 			if (session != null) session.logout();
 		}

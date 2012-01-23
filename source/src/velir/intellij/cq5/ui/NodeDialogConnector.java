@@ -44,21 +44,41 @@ public class NodeDialogConnector {
 		namePanel.add(nameField);
 		rootPanel.add(namePanel);
 
+		// if we could not connect to the JCR, display warning
+		if (! VNodeDefinition.hasDefinitions()) {
+			JLabel jLabel = new JLabel("warning: could not connect to JCR to fetch definitions");
+			jLabel.setForeground(Color.RED);
+			rootPanel.add(jLabel);
+		}
+
 		// node primary type
 		JPanel primaryTypePanel = new JPanel(new GridLayout(1,2));
 		JLabel primaryTypeLabel = new JLabel("type");
 		primaryTypePanel.add(primaryTypeLabel);
 		// only allow selecting of node type on node creation
 		if (canChangeType) {
-			final JComboBox jComboBox = new JComboBox(VNodeDefinition.getNodeTypeNames());
-			jComboBox.setSelectedItem(getProperty(VNode.JCR_PRIMARYTYPE, String.class));
-			jComboBox.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					String newPrimaryType = (String) jComboBox.getSelectedItem();
-					changeNodeType(newPrimaryType);
-				}
-			});
-			primaryTypePanel.add(jComboBox);
+			// add selector for primaryType if we could connect to the JCR and built definitions
+			if (VNodeDefinition.hasDefinitions()) {
+				final JComboBox jComboBox = new JComboBox(VNodeDefinition.getNodeTypeNames());
+				jComboBox.setSelectedItem(getProperty(VNode.JCR_PRIMARYTYPE, String.class));
+				jComboBox.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						String newPrimaryType = (String) jComboBox.getSelectedItem();
+						changeNodeType(newPrimaryType);
+					}
+				});
+				primaryTypePanel.add(jComboBox);
+			}
+			// if we couldn't connect to the JCR, just allow the user to put anything in for primary type
+			else {
+				JTextField primaryTypeField = new JTextField(getProperty(VNode.JCR_PRIMARYTYPE, String.class));
+				new DocumentListenerSingleAdder(VNode.JCR_PRIMARYTYPE, primaryTypeField, new Anonymous<String, Object>() {
+					public Object call(String s) {
+						return s;
+					}
+				});
+				primaryTypePanel.add(primaryTypeField);
+			}
 		} else {
 			JTextField primaryTypeField = new JTextField(getProperty(VNode.JCR_PRIMARYTYPE, String.class));
 			primaryTypeField.setEditable(false);

@@ -61,6 +61,9 @@ public class Connection {
 		//get our repository
 		Repository rep = Connection.getRepository();
 
+		// abort if we couldn't get a repository
+		if (rep == null) throw new RepositoryException("Could not get repository (velir code)");
+
 		//login to our repository and return our session
 		return rep.login(Connection.getCredentials(), Connection.WORKSPACE);
 	}
