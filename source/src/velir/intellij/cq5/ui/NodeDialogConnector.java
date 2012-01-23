@@ -229,7 +229,7 @@ public class NodeDialogConnector {
 
 			final Callback<Long> addValuePanel = new Callback<Long>() {
 				public void process(Long aLong) {
-					final JPanel innerPanel = new JPanel(new GridLayout(1,2));
+					final JPanel innerPanel = new JPanel(new FlowLayout());
 
 					final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*"), aLong.toString());
 					new DocumentListenerAdder(regexTextField, new Callback<String>() {
@@ -295,7 +295,7 @@ public class NodeDialogConnector {
 
 			final Callback<Double> addValuePanel = new Callback<Double>() {
 				public void process(Double aDouble) {
-					final JPanel innerPanel = new JPanel(new GridLayout(1,2));
+					final JPanel innerPanel = new JPanel(new FlowLayout());
 
 					final RegexTextField regexTextField = new RegexTextField(Pattern.compile("[0-9]*\\.?[0-9]*"), aDouble.toString());
 					new DocumentListenerAdder(regexTextField, new Callback<String>() {
@@ -361,7 +361,7 @@ public class NodeDialogConnector {
 
 			final Callback<Boolean> addValuePanel = new Callback<Boolean>() {
 				public void process(Boolean aBoolean) {
-					final JPanel innerPanel = new JPanel(new GridLayout(1,2));
+					final JPanel innerPanel = new JPanel(new FlowLayout());
 
 					final JCheckBox jCheckBox = new JCheckBox("", aBoolean);
 					jCheckBox.addActionListener(new ActionListener() {
@@ -427,9 +427,10 @@ public class NodeDialogConnector {
 
 			final Callback<String> addValuePanel = new Callback<String>() {
 				public void process(String s) {
-					final JPanel innerPanel = new JPanel(new GridLayout(1,2));
+					final JPanel innerPanel = new JPanel(new FlowLayout());
 
 					final JTextField jTextField = new JTextField(s);
+					jTextField.setPreferredSize(RegexTextField.GOOD_SIZE);
 					new DocumentListenerAdder(jTextField, new Callback<String>() {
 						public void process(String s) {
 							setPropertyValues.run();
@@ -523,6 +524,7 @@ public class NodeDialogConnector {
 			addMultiValueProperty(jPanel, name, value);
 		} else {
 			final JTextField jTextField = new JTextField(value.toString());
+			jTextField.setPreferredSize(RegexTextField.GOOD_SIZE);
 			new DocumentListenerSingleAdder(name, jTextField, new Anonymous<String, Object>() {
 				public Object call(String s) {
 					return s;

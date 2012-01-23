@@ -5,9 +5,11 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.PlainDocument;
+import java.awt.*;
 import java.util.regex.Pattern;
 
 public class RegexTextField extends JTextField {
+	public static final Dimension GOOD_SIZE = new Dimension(120, 20);
 
 	static class RegexDocument extends PlainDocument {
 		private Pattern pattern;
@@ -34,6 +36,7 @@ public class RegexTextField extends JTextField {
 
 	public RegexTextField (Pattern pattern, String init) {
 		super(new RegexDocument(pattern), init, 10);
+		setPreferredSize(GOOD_SIZE);
 
 		this.pattern = pattern;
 	}
