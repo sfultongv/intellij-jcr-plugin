@@ -106,7 +106,7 @@ public class NodeDialogConnector {
 		newPropertyPanel.add(jTextField);
 		final JComboBox addPropertyCombo = new JComboBox(VNode.TYPESTRINGS);
 		newPropertyPanel.add(addPropertyCombo);
-		JButton jButton = new JButton("add property");
+		final JButton jButton = new JButton("add property");
 		jButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String type = (String) addPropertyCombo.getSelectedItem();
@@ -131,6 +131,11 @@ public class NodeDialogConnector {
 			}
 		});
 		newPropertyPanel.add(jButton);
+		new DocumentListenerAdder(jTextField, new Callback<String>() {
+			public void process(String s) {
+				jButton.setEnabled(! hasProperty(s));
+			}
+		});
 		rootPanel.add(newPropertyPanel);
 	}
 
@@ -161,6 +166,10 @@ public class NodeDialogConnector {
 
 	private void setProperty (String name, Object o) {
 		vNode.setProperty(name, o);
+	}
+
+	private boolean hasProperty (String name) {
+		return vNode.hasProperty(name);
 	}
 
 	public boolean canAlter(String name) {

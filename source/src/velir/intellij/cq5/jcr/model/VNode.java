@@ -85,6 +85,10 @@ public class VNode {
 		properties.remove(name);
 	}
 
+	public boolean hasProperty (String name) {
+		return properties.containsKey(name);
+	}
+
 	/**
 	 * can remove property from node?
 	 * @param name
