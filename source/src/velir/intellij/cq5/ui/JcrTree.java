@@ -3,7 +3,6 @@ package velir.intellij.cq5.ui;
 import com.intellij.ui.treeStructure.Tree;
 import velir.intellij.cq5.jcr.LightNode;
 
-import javax.jcr.Session;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
@@ -22,6 +21,9 @@ public class JcrTree extends Tree {
 		//don't display root node for this tree
 		this.setShowsRootHandles(true);
 		this.setRootVisible(false);
+
+		//set our cell renderer
+		this.setCellRenderer(new JcrTreeCellRenderer());
 
 		//create our tree node from the node passed
 		JcrTreeNode root = new JcrTreeNode(rootNode);

@@ -21,6 +21,11 @@ public class LightNode {
 	private String path;
 
 	/**
+	 * The node type for this node.
+	 */
+	private String primaryNodeType;
+
+	/**
 	 * Whether or not this node has children
 	 */
 	private boolean hasChildren;
@@ -40,6 +45,7 @@ public class LightNode {
 		//populate our properties from our node
 		this.name = node.getName();
 		this.path = node.getPath();
+		this.primaryNodeType = node.getPrimaryNodeType().getName();
 		this.hasChildren = node.hasNodes();
 	}
 
@@ -61,6 +67,11 @@ public class LightNode {
 	public String getPath() {
 		//return our path
 		return this.path;
+	}
+
+	public String getPrimaryNodeType() {
+		//return our primary node type
+		return this.primaryNodeType;
 	}
 
 	/**
