@@ -128,11 +128,13 @@ public class JcrTreeNode extends DefaultMutableTreeNode {
 		try {
 			//if we weren't provided a session then get a session
 			if (session == null) {
+				// TODO: fix this (cannot reconnect without Connection which needs Project)
+
 				//get our session
-				session = Connection.getSession();
+				//session = Connection.getSession();
 
 				//set our flag indicating that we created our session
-				sessionCreated = true;
+				//sessionCreated = true;
 			}
 
 			//pull out our current jcr node.

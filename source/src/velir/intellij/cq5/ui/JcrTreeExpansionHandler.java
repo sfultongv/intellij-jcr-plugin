@@ -28,8 +28,10 @@ public class JcrTreeExpansionHandler implements TreeExpansionListener {
 		//declare our session.
 		Session session = null;
 		try {
+			// TODO: fix this (cannot connect without Connection which needs Project)
 			//get a session to our repository.
-			session = Connection.getSession();
+			Connection connection = Connection.getInstance(null);
+			session = connection.getSession();
 
 			//populate our children and if any were added update our tree.
 			if (node.populateChildren(true, session)) {

@@ -1,6 +1,7 @@
 package velir.intellij.cq5.jcr.model;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Computable;
 import velir.intellij.cq5.jcr.Connection;
 
@@ -121,13 +122,14 @@ public class VNodeDefinition {
 		return suggestions;
 	}
 
-	public static void buildDefinitions () {
+	public static void buildDefinitions (Project project) {
 		log.info("started building node definitions");
 		Session session = null;
 		String nodeName = "";
 		try {
 			allNodes = new HashMap<String, VNodeDefinition>();
-			session = Connection.getSession();
+			Connection connection = Connection.getInstance(project);
+			session = connection.getSession();
 			Node rootNode = session.getNode("/jcr:system/jcr:nodeTypes");
 			NodeIterator nodeIterator = rootNode.getNodes();
 			while (nodeIterator.hasNext()) {

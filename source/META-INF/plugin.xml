@@ -75,5 +75,7 @@
 
   <extensions defaultExtensionNs="com.intellij">
 	  <!-- Add your extensions here -->
+	  <projectService serviceInterface="velir.intellij.cq5.jcr.Connection" serviceImplementation="velir.intellij.cq5.jcr.Connection" />
+	  <projectConfigurable implementation="velir.intellij.cq5.ui.JCRSettings" />
   </extensions>
 </idea-plugin>
